@@ -37,6 +37,44 @@ typedef struct Pcap_Packet_Header {
     unsigned int len;
 };
 
+typedef struct Byte6 {
+	char v1, v2, v3, v4, v5, v6;
+};
+
+typedef struct Address {
+	char a1, a2, a3, a4;
+};
+
+typedef struct Ethernet2 {
+	 Byte6 destination;
+	 Byte6 source;
+	 short type;
+};
+
+typedef struct Protocol {
+	char version;
+	char diff_svcs_field;
+	short tot_len;
+	short identification;
+	short flags;
+	char time_to_live;
+	char protocol;
+	short header_checksum;
+	Address source_address;
+	Address destination_address;
+};
+
+typedef struct TC_Protocol {
+	short source_port;
+	short destination_port;
+	int sequence_number;
+	int acknowledge_number;
+	short flags;
+	short window;
+	short checksum;
+	short urgent_pointer;
+};
+
 void printPcapFileHeader(Pcap_Header *pfh){
 	if (pfh==NULL) {
 		return;

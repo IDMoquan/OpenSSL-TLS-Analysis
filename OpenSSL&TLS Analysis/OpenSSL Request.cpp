@@ -49,9 +49,9 @@ int main() {
     sin.sin_addr = *(in_addr*)ip->h_addr_list[0];
 
     //printf("%d",sin.sin_addr);
-    //struct in_addr addr;
-    //memcpy(&addr, ip->h_addr_list[0], sizeof(struct in_addr));
-    //std::cout << "Baidu's IP: " << inet_ntoa(addr) << std::endl;
+    struct in_addr addr;
+    memcpy(&addr, ip->h_addr_list[0], sizeof(struct in_addr));
+    std::cout << "Baidu's IP: " << inet_ntoa(addr) << std::endl;
     //return 0;
 
     // 连接到服务器
@@ -101,7 +101,7 @@ int main() {
         start += ret;
     }
     rec[start] = 0;
-    cout << Utf8ToGbk(rec) << endl;
+    //cout << Utf8ToGbk(rec) << endl;
 
     // 清理资源
     SSL_shutdown(ssl);

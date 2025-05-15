@@ -2,7 +2,7 @@
 #include<fstream>
 #include<queue>
 #include "Head.h"
-#define Pcap_File "./Data/test.pcap"
+#define Pcap_File "./Data/2.pcap"
 #define MAX_ETH_FRAME 1514
 
 using namespace std;
@@ -23,8 +23,8 @@ int main(){
     while (pf.read((char*)pph, sizeof(Pcap_Packet_Header))) {
         //pf.read((char*)pph, sizeof(Pcap_Packet_Header));
         printPcapHeader(pph);
-        void* buffer = (void*)malloc(sizeof(pph->caplen));
-        pf.read((char*)buffer, sizeof(pph->caplen));
+        void* buffer = (void*)malloc(pph->caplen);
+        pf.read((char*)buffer, pph->caplen);
         printPcap(buffer, pph->caplen);
         free(buffer);
     }
