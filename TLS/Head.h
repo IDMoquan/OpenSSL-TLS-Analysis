@@ -1,3 +1,6 @@
+#include<WinSock2.h>
+#pragma comment(lib, "ws2_32.lib")
+
 typedef struct Pcap_Header {
     unsigned int magic = 0;             //0xA1 B2 C3 D4:用来标示文件的开始
     unsigned short major = 0 ;           //0×02 00:当前文件主要的版本号
@@ -73,3 +76,40 @@ void printPcapHeader(Pcap_Packet_Header* ph) {
 }
 
 
+void printPcap(void* data, size_t size) {
+	unsigned  short iPos = 0;
+	//int * p = (int *)data;
+	//unsigned short* p = (unsigned short *)data;
+	if (data == NULL) {
+		return;
+	}
+
+	printf("\n==data:0x%x,len:%lu=========", data, size);
+
+	for (iPos = 0; iPos < size / sizeof(unsigned short); iPos++) {
+		//printf(" %x ",(int)( * (p+iPos) ));
+		//unsigned short a = ntohs(p[iPos]);
+
+		unsigned short a = ntohs(*((unsigned short*)data + iPos));
+		if (iPos % 8 == 0) printf("\n");
+		if (iPos % 4 == 0) printf(" ");
+
+		printf("%04x", a);
+
+
+	}
+	/*
+	 for (iPos=0; iPos <= size/sizeof(int); iPos++) {
+		//printf(" %x ",(int)( * (p+iPos) ));
+		int a = ntohl(p[iPos]);
+
+		//int a = ntohl( *((int *)data + iPos ) );
+		if (iPos %4==0) printf("\n");
+
+		printf("%08x ",a);
+
+
+	}
+	 */
+	printf("\n============\n");
+}
