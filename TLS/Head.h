@@ -1,7 +1,7 @@
 #include<WinSock2.h>
 #pragma comment(lib, "ws2_32.lib")
 
-typedef struct Pcap_Header {
+struct Pcap_Header {
     unsigned int magic = 0;             //0xA1 B2 C3 D4:用来标示文件的开始
     unsigned short major = 0 ;           //0×02 00:当前文件主要的版本号
     unsigned short minor = 0;           //0×04 00当前文件次要的版本号
@@ -30,28 +30,28 @@ typedef struct Pcap_Header {
 114         LocalTalk
 */
 
-typedef struct Pcap_Packet_Header {
+struct Pcap_Packet_Header {
     unsigned int timestamp_sec;     //时间戳高位(second)
     unsigned int timestamp_msec;    //时间戳低位(microsecond)
     unsigned int caplen;
     unsigned int len;
 };
 
-typedef struct Byte6 {
+struct Byte6 {
 	char v1, v2, v3, v4, v5, v6;
 };
 
-typedef struct Address {
+struct Address {
 	char a1, a2, a3, a4;
 };
 
-typedef struct Ethernet2 {
+struct Ethernet2 {
 	 Byte6 destination;
 	 Byte6 source;
 	 short type;
 };
 
-typedef struct Protocol {
+struct Protocol {
 	char version;
 	char diff_svcs_field;
 	short tot_len;
@@ -64,7 +64,7 @@ typedef struct Protocol {
 	Address destination_address;
 };
 
-typedef struct TC_Protocol {
+struct TC_Protocol {
 	short source_port;
 	short destination_port;
 	int sequence_number;
@@ -121,7 +121,6 @@ void printPcap(void* data, size_t size) {
 	if (data == NULL) {
 		return;
 	}
-
 	printf("\n==data:0x%x,len:%lu=========", data, size);
 
 	for (iPos = 0; iPos < size / sizeof(unsigned short); iPos++) {
@@ -152,16 +151,20 @@ void printPcap(void* data, size_t size) {
 	printf("\n============\n");
 }
 
-typedef struct Direction{
+struct Direction {
 	Address source;
 	Address destination;
-}
+};
 
-Class Feature{
+class Feature{
 private:
-	int size;
+	unsigned int size;
 	Direction direction;
 public:
-	Feature(int s, Direction d) : size(s), direction(d){}
+	Feature(unsigned int& s, Protocol& ptc){
+		size = s;
+		direction.source = ptc.source_address;
+		direction.destination = ptc.destination_address;
+	}
 	
 };
