@@ -151,3 +151,17 @@ void printPcap(void* data, size_t size) {
 	 */
 	printf("\n============\n");
 }
+
+typedef struct Direction{
+	Address source;
+	Address destination;
+}
+
+Class Feature{
+private:
+	int size;
+	Direction direction;
+public:
+	Feature(int s, Direction d) : size(s), direction(d){}
+	
+};
