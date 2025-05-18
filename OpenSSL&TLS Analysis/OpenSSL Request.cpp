@@ -39,9 +39,10 @@ int main() {
     }
 
     // 设置目标服务器
-    string host = "www.baidu.com";
+    string host = "www.zhihu.com";
+    cout << host << endl;
     unsigned short port = 443;
-    hostent* ip = gethostbyname(host.c_str());
+    hostent* ip = gethostbyname(host.c_str());  
 
     sockaddr_in sin;
     sin.sin_family = AF_INET;
@@ -51,7 +52,7 @@ int main() {
     //printf("%d",sin.sin_addr);
     struct in_addr addr;
     memcpy(&addr, ip->h_addr_list[0], sizeof(struct in_addr));
-    std::cout << "Baidu's IP: " << inet_ntoa(addr) << std::endl;
+    std::cout << host << "'s IP: " << inet_ntoa(addr) << std::endl;
     //return 0;
 
     // 连接到服务器

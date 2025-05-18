@@ -1,5 +1,16 @@
-#include<WinSock2.h>
+#pragma once
+#ifndef _HEADER_H_
+#define _HEADER_H_
+#include <WinSock2.h>
+#include <Eigen/Eigen>
+#include <vector>
+#include <cmath>
+#include <iostream>
+#include <fstream>
+#include <sstream>
 #pragma comment(lib, "ws2_32.lib")
+using namespace std;
+using namespace Eigen;
 
 struct Pcap_Header {
     unsigned int magic = 0;             //0xA1 B2 C3 D4:用来标示文件的开始
@@ -75,81 +86,6 @@ struct TC_Protocol {
 	short urgent_pointer;
 };
 
-void printPcapFileHeader(Pcap_Header *pfh){
-	if (pfh==NULL) {
-		return;
-	}
-	printf("=====================\n"
-		   "magic:0x%0x\n"
-		   "version_major:%u\n"
-		   "version_minor:%u\n"
-		   "thiszone:%d\n"
-		   "sigfigs:%u\n"
-		   "snaplen:%u\n"
-		   "linktype:%u\n"
-		   "=====================\n",
-		   pfh->magic,
-		   pfh->major,
-		   pfh->minor,
-		   pfh->thiszone,
-		   pfh->sigfigs,
-		   pfh->snaplen,
-		   pfh->linktype);
-}
-
-void printPcapHeader(Pcap_Packet_Header* ph) {
-	if (ph == NULL) {
-		return;
-	}
-	printf("=====================\n"
-		"ts.timestamp_s:%u\n"
-		"ts.timestamp_ms:%u\n"
-		"capture_len:%u\n"
-		"len:%d\n"
-		"=====================\n",
-		ph->timestamp_sec,
-		ph->timestamp_msec,
-		ph->caplen,
-		ph->len);
-}
-
-
-void printPcap(void* data, size_t size) {
-	unsigned  short iPos = 0;
-	//int * p = (int *)data;
-	//unsigned short* p = (unsigned short *)data;
-	if (data == NULL) {
-		return;
-	}
-	printf("\n==data:0x%x,len:%lu=========", data, size);
-
-	for (iPos = 0; iPos < size / sizeof(unsigned short); iPos++) {
-		//printf(" %x ",(int)( * (p+iPos) ));
-		//unsigned short a = ntohs(p[iPos]);
-
-		unsigned short a = ntohs(*((unsigned short*)data + iPos));
-		if (iPos % 8 == 0) printf("\n");
-		if (iPos % 4 == 0) printf(" ");
-
-		printf("%04x", a);
-
-
-	}
-	/*
-	 for (iPos=0; iPos <= size/sizeof(int); iPos++) {
-		//printf(" %x ",(int)( * (p+iPos) ));
-		int a = ntohl(p[iPos]);
-
-		//int a = ntohl( *((int *)data + iPos ) );
-		if (iPos %4==0) printf("\n");
-
-		printf("%08x ",a);
-
-
-	}
-	 */
-	printf("\n============\n");
-}
 
 struct Direction {
 	Address source;
@@ -159,12 +95,33 @@ struct Direction {
 class Feature{
 private:
 	unsigned int size;
-	Direction direction;
+	bool direction_send;
 public:
-	Feature(unsigned int& s, Protocol& ptc){
+	Feature(unsigned int& s, short& port){
 		size = s;
-		direction.source = ptc.source_address;
-		direction.destination = ptc.destination_address;
+		//通过端口判断传输方向
+		if (port == 443) {
+			direction_send = 1;
+		}
+		else {
+			direction_send = 0;
+		}
 	}
-	
+	unsigned int GetSize() {
+		return size;
+	}
+	bool GetDirection() {
+		return direction_send;
+	}
 };
+
+void printPcapFileHeader(Pcap_Header* pfh);
+void printPcapHeader(Pcap_Packet_Header* ph);
+void printPcap(void* data, size_t size);
+void LoadData(vector<Feature>& f, vector<MatrixXf>& features, vector<int>& labels, int& label);
+int Label_Number(string label);
+
+enum Website_label {
+	bd = 1, bz, tb, wb, 
+};
+#endif
