@@ -79,13 +79,14 @@ void printPcap(void* data, size_t size) {
     printf("\n============\n");
 }
 
-void LoadData(vector<Feature>& f ,vector<MatrixXf>& features, vector<int>& labels, int& label) {
+void LoadData(vector<Feature>& f ,vector<MatrixXf>& features, vector<int>& labels, const int& label) {
     int size = f.size();
     MatrixXf feature(size, 2);
     for (int i = 0; i < size; i++) {
         feature(i, 0) = f[i].GetSize();
         feature(i, 1) = f[i].GetDirection();
     }
+    cout << feature << " " << label <<endl << "---------------------" << endl;
     features.push_back(feature);
     labels.push_back(label);
 }

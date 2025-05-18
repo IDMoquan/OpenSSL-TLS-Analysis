@@ -97,7 +97,7 @@ private:
 	unsigned int size;
 	bool direction_send;
 public:
-	Feature(unsigned int& s, short& port){
+	Feature(unsigned int& s, const short& port){
 		size = s;
 		//通过端口判断传输方向
 		if (port == 443) {
@@ -118,7 +118,7 @@ public:
 void printPcapFileHeader(Pcap_Header* pfh);
 void printPcapHeader(Pcap_Packet_Header* ph);
 void printPcap(void* data, size_t size);
-void LoadData(vector<Feature>& f, vector<MatrixXf>& features, vector<int>& labels, int& label);
+void LoadData(vector<Feature>& f, vector<MatrixXf>& features, vector<int>& labels, const int& label);
 int Label_Number(string label);
 
 enum Website_label {

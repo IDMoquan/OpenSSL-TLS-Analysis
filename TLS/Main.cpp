@@ -16,7 +16,7 @@ int train() {
     vector<path>dir_paths;
     for (const auto& entry : directory_iterator(folderPath)) {
         if (is_directory(entry)) {
-            std::cout << "Directory: " << entry.path() << " " << entry.path().filename() << std::endl;
+            //std::cout << "Directory: " << entry.path() << " " << entry.path().filename() << std::endl;
             dir_paths.push_back(entry.path());
         }
     }
@@ -27,11 +27,10 @@ int train() {
             cout << Pcap_File << endl;
             Pcap_Header* ph = new Pcap_Header;
             Pcap_Packet_Header* pph = new Pcap_Packet_Header;
-            Ethernet2* e2 = new Ethernet2;
-            Protocol* ptc = new Protocol;
-            TC_Protocol* tc_ptc = new TC_Protocol;
-            int label;
-
+            Ethernet2* e2;
+            Protocol* ptc;
+            TC_Protocol* tc_ptc;
+             
             ifstream pf;
             pf.open(Pcap_File, ios::in | ios::binary);
             if (!pf) {
@@ -39,31 +38,31 @@ int train() {
                 return -1;
             }
             pf.read((char*)ph, sizeof(Pcap_Header));
-            printPcapFileHeader(ph);
+            //printPcapFileHeader(ph);
             vector<Feature>features;
             while (pf.read((char*)pph, sizeof(Pcap_Packet_Header))) {
                 //pf.read((char*)pph, sizeof(Pcap_Packet_Header));
                 //printPcapHeader(pph);
-                void* buffer = (void*)malloc(pph->caplen);
-                pf.read((char*)e2, sizeof(Ethernet2));
-                pf.read((char*)ptc, sizeof(Protocol));
-                pf.read((char*)tc_ptc, sizeof(TC_Protocol));
-                pf.read((char*)buffer, pph->caplen - sizeof(Ethernet2) - sizeof(Protocol) - sizeof(TC_Protocol));
+                char* buffer = (char*)malloc(pph->caplen);
+                pf.read((char*)buffer, pph->caplen);
+                e2 = (Ethernet2*)buffer;
+                ptc = (Protocol*)(buffer + sizeof(Ethernet2));
+                tc_ptc = (TC_Protocol*)(buffer + sizeof(Ethernet2) + sizeof(Protocol));
+                //printPcap(e2, sizeof(Ethernet2));
+                //printPcap(ptc, sizeof(Protocol));
+                //printPcap(tc_ptc, sizeof(TC_Protocol));
                 //printPcap(buffer, pph->caplen);
-                features.push_back(Feature(pph->caplen, tc_ptc->destination_port));
+                //cout << (short)ptc->destination_address.a1 << "." << (short)ptc->destination_address.a2 << "." << (short)ptc->destination_address.a3 << "." << (short)ptc->destination_address.a4 << endl;
+                //cout << "¶Ë¿Ú£º" << ntohs((short)tc_ptc->destination_port) << endl;
+                //printPcap(&(tc_ptc->destination_port), sizeof(short));
+                features.push_back(Feature(pph->caplen, (short)ntohs(tc_ptc->destination_port)));
                 free(buffer);
+                //CNN(features);
             }
             vector<int> labels;
-            LoadData(features, features_matrix, labels, label);
-
-            //CNN(features);
-            delete ph;
-            delete pph;
-            delete e2;
-            delete ptc;
-            delete tc_ptc;
+            LoadData(features, features_matrix, labels, Label_Number(p.filename().string()));
         }
-        cout << features_matrix;
+        //cout << features_matrix;
     }
     
 }
