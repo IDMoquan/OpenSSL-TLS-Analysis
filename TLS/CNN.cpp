@@ -79,133 +79,126 @@ void printPcap(void* data, size_t size) {
     printf("\n============\n");
 }
 
-void LoadData(vector<Feature>& f ,vector<MatrixXf>& features, vector<int>& labels, const int& label) {
+void LoadData(vector<Feature>& f ,vector<MatrixXf>& features, vector<int>& labels, const int& label, int len) {
     int size = f.size();
-    MatrixXf feature(size, 2);
+    MatrixXf feature(len, 2);
     for (int i = 0; i < size; i++) {
         feature(i, 0) = f[i].GetSize();
         feature(i, 1) = f[i].GetDirection();
     }
-    cout << feature << " " << label <<endl << "---------------------" << endl;
+    for (int i = size; i < len; i++) {
+        feature(i, 0) = 0.0f;
+        feature(i, 1) = 0.0f;
+    }
+    //cout << feature <<  " " << label <<endl << "---------------------" << endl;
     features.push_back(feature);
     labels.push_back(label);
 }
 
-class CNN {
-public:
-    CNN(int input_cols, int filter_size, int num_filters, int pool_size, int num_classes)
-        : input_cols(input_cols), filter_size(filter_size), num_filters(num_filters), pool_size(pool_size), num_classes(num_classes) {
-        // 初始化卷积核和偏置
-        cout << "CNN" << endl;
-        weights.resize(num_filters);
-        biases.resize(num_filters);
-        for (int i = 0; i < num_filters; ++i) {
-            weights[i] = MatrixXf::Random(filter_size, input_cols);
-            biases[i] = MatrixXf::Random(1, 1);
-        }
-        // 初始化全连接层权重和偏置
-        fc_weights = MatrixXf::Random(num_filters, num_classes);
-        fc_bias = MatrixXf::Random(1, num_classes);
+CNN::CNN(int input_rows, int input_cols, int filter_size, int num_filters, int pool_size, int num_classes)
+    : input_rows(input_rows), input_cols(input_cols), filter_size(filter_size), num_filters(num_filters), pool_size(pool_size), num_classes(num_classes) {
+    // 初始化卷积核和偏置
+    weights.resize(num_filters);
+    biases.resize(num_filters);
+    for (int i = 0; i < num_filters; ++i) {
+        weights[i] = MatrixXf::Random(filter_size, input_cols);
+        biases[i] = MatrixXf::Random(1, 1); // 初始化偏置项为随机值
     }
 
-    // 前向传播
-    MatrixXf forward(const MatrixXf& input) {
-        cout << "Forward" << endl;
-        int input_rows = input.rows();
-        MatrixXf conv_output(input_rows - filter_size + 1, input_cols);
-        // 卷积层
-        for (int i = 0; i < num_filters; ++i) {
-            conv2d(input, weights[i], conv_output);
-            conv_output += biases[i];
-            conv_output = relu(conv_output); // ReLU激活
+    // 初始化全连接层权重和偏置
+    int fc_input_size = ((input_rows - filter_size + 1) / pool_size) * input_cols;
+    fc_weights = MatrixXf::Random(fc_input_size, num_classes);
+    fc_bias = MatrixXf::Random(1, num_classes);
+}
+
+// 前向传播
+MatrixXf CNN::forward(const MatrixXf& input) {
+    MatrixXf conv_output;
+    MatrixXf pooled_output;
+
+    // 卷积层
+    for (int i = 0; i < num_filters; ++i) {
+        MatrixXf temp_output(input_rows - filter_size + 1, input_cols); // 临时变量存储卷积输出
+        conv2d(input, weights[i], temp_output);
+        float bias_value = biases[i](0, 0); // 获取偏置项的标量值
+        temp_output.array() += bias_value; // 将偏置项加到卷积输出
+        temp_output = relu(temp_output); // ReLU激活
+        if (i == 0) {
+            conv_output = temp_output; // 第一次卷积后初始化conv_output
         }
-        // 池化层
-        MatrixXf pooled_output;
-        max_pooling(conv_output, pool_size, pooled_output);
-        // 全连接层
-        return fully_connected(pooled_output, fc_weights, fc_bias);
-    }
-
-private:
-    int input_cols;
-    int filter_size;
-    int num_filters;
-    int pool_size;
-    int num_classes;
-    vector<MatrixXf> weights;
-    vector<MatrixXf> biases;
-    MatrixXf fc_weights;
-    MatrixXf fc_bias;
-
-    // 卷积操作
-    void conv2d(const MatrixXf& input, const MatrixXf& kernel, MatrixXf& output) {
-        cout << "conv2d" << endl;
-        int kernel_size = kernel.rows();
-        int input_rows = input.rows();
-        int input_cols = input.cols();
-        int output_rows = input_rows - kernel_size + 1;
-        output.resize(output_rows, input_cols);
-        for (int i = 0; i < output_rows; ++i) {
-            for (int j = 0; j < input_cols; ++j) {
-                float sum = 0.0;
-                for (int ki = 0; ki < kernel_size; ++ki) {
-                    sum += input(i + ki, j) * kernel(ki, j);
-                }
-                output(i, j) = sum;
-            }
+        else {
+            conv_output += temp_output; // 累加卷积输出
         }
     }
 
-    // ReLU激活函数
-    MatrixXf relu(const MatrixXf& input) {
-        cout << "relu" << endl;
-        MatrixXf output = input;
-        for (int i = 0; i < input.rows(); ++i) {
-            for (int j = 0; j < input.cols(); ++j) {
-                output(i, j) = max(0.0f, input(i, j));
-            }
-        }
-        return output;
-    }
+    // 池化层
+    max_pooling(conv_output, pool_size, pooled_output);
 
-    // 最大池化操作
-    void max_pooling(const MatrixXf& input, int pool_size, MatrixXf& output) {
-        cout << "Max pooling" << endl;
-        int input_rows = input.rows();
-        int input_cols = input.cols();
-        int output_rows = input_rows / pool_size;
-        output.resize(output_rows, input_cols);
-        for (int i = 0; i < output_rows; ++i) {
-            for (int j = 0; j < input_cols; ++j) {
-                float max_val = -INFINITY;
-                for (int pi = 0; pi < pool_size; ++pi) {
-                    max_val = max(max_val, input(i * pool_size + pi, j));
-                }
-                output(i, j) = max_val;
-            }
-        }
-    }
+    // 将池化层的输出展平为一维向量
+    MatrixXf pooled_output_flattened = Eigen::Map<MatrixXf>(pooled_output.data(), pooled_output.size(), 1).transpose();
 
     // 全连接层
-    MatrixXf fully_connected(const MatrixXf& input, const MatrixXf& weights, const MatrixXf& bias) {
-        cout << "Fully connected" << endl;
-        // 确保输入矩阵的列数与权重矩阵的行数匹配
-        assert(input.cols() == weights.rows());
+    return fully_connected(pooled_output_flattened, fc_weights, fc_bias);
+}
 
-        // 确保偏置向量的大小与权重矩阵的列数匹配
-        assert(bias.rows() == 1 && bias.cols() == weights.cols());
-
-        // 计算线性变换
-        MatrixXf output = input * weights;
-
-        // 将偏置向量加到输出矩阵的每一行
-        for (int i = 0; i < output.rows(); ++i) {
-            output.row(i) += bias.row(0);
+// 卷积操作
+void CNN::conv2d(const MatrixXf& input, const MatrixXf& kernel, MatrixXf& output) {
+    int kernel_size = kernel.rows();
+    int input_rows = input.rows();
+    int input_cols = input.cols();
+    int output_rows = input_rows - kernel_size + 1;
+    output.resize(output_rows, input_cols);
+    for (int i = 0; i < output_rows; ++i) {
+        for (int j = 0; j < input_cols; ++j) {
+            float sum = 0.0;
+            for (int ki = 0; ki < kernel_size; ++ki) {
+                sum += input(i + ki, j) * kernel(ki, j);
+            }
+            output(i, j) = sum;
         }
-
-        return output;
     }
-};
+}
+
+// ReLU激活函数
+MatrixXf CNN::relu(const MatrixXf& input) {
+    return input.unaryExpr([](float x) { return max(0.0f, x); });
+}
+
+
+// 最大池化操作
+void CNN::max_pooling(const MatrixXf& input, int pool_size, MatrixXf& output) {
+    int input_rows = input.rows();
+    int input_cols = input.cols();
+    int output_rows = input_rows / pool_size;
+    output.resize(output_rows, input_cols);
+    for (int i = 0; i < output_rows; ++i) {
+        for (int j = 0; j < input_cols; ++j) {
+            float max_val = -INFINITY;
+            for (int pi = 0; pi < pool_size; ++pi) {
+                max_val = max(max_val, input(i * pool_size + pi, j));
+            }
+            output(i, j) = max_val;
+        }
+    }
+}
+
+// 全连接层
+MatrixXf CNN::fully_connected(const MatrixXf& input, const MatrixXf& weights, const MatrixXf& bias) {
+    //cout << input.cols() << " " << weights.rows() << endl;
+    return (input * weights).rowwise() + bias.row(0);
+}
+
+MatrixXf softmax(const MatrixXf& input) {
+    // 计算每个元素的指数
+    MatrixXf exp_input = input.array().exp();
+    //cout << exp_input.rows();
+
+    // 计算每行的和，并转置为行向量
+    int sum = exp_input.sum();
+
+    // 按行归一化
+    return exp_input / sum;
+}
 
 int Label_Number(string label) {
     if (label == "bd")  return 1;

@@ -8,6 +8,8 @@ using namespace Eigen;
 using namespace filesystem;
 
 int train() {
+    int max_count = -1;
+    string name;
     path folderPath = "Data\\train";
     if (!exists(folderPath) || !is_directory(folderPath)) {
         cout << "Folder doesn't exist!" << endl;
@@ -20,7 +22,35 @@ int train() {
             dir_paths.push_back(entry.path());
         }
     }
+    for (const auto& p : dir_paths) {
+        for (const auto& entry : directory_iterator(p)) {
+            string Pcap_File = entry.path().string();
+            Pcap_Header* ph = new Pcap_Header;
+            Pcap_Packet_Header* pph = new Pcap_Packet_Header;
+
+            ifstream pf;
+            pf.open(Pcap_File, ios::in | ios::binary);
+            if (!pf) {
+                cout << "Open File Error!" << endl;
+                return -1;
+            }
+            pf.read((char*)ph, sizeof(Pcap_Header));
+            int count = 0;
+            while (pf.read((char*)pph, sizeof(Pcap_Packet_Header))) {
+                char* buffer = (char*)malloc(pph->caplen);
+                pf.read((char*)buffer, pph->caplen);
+                count++;
+                free(buffer);
+            }
+            if (count > max_count) {
+                max_count = count;
+                name = Pcap_File;
+            }
+        }
+    }
+    //cout << name << ":" << max_count << endl;
     vector<MatrixXf> features_matrix;
+    vector<int> labels;
     for (const auto& p : dir_paths) {
         for (const auto& entry : directory_iterator(p)) {
             string Pcap_File = entry.path().string();
@@ -59,12 +89,20 @@ int train() {
                 free(buffer);
                 //CNN(features);
             }
-            vector<int> labels;
-            LoadData(features, features_matrix, labels, Label_Number(p.filename().string()));
+            LoadData(features, features_matrix, labels, Label_Number(p.filename().string()), max_count);
         }
-        //cout << features_matrix;
     }
-    
+    int input_rows =  max_count;
+    int input_cols = 2;
+    CNN cnn(input_rows, input_cols, 3, 1, 2, 10);   // 输入大小为 n 行 2 列，卷积核大小3x2，1个卷积核，池化大小2，10个类别
+    //前向传播
+    for (size_t i = 0; i < features_matrix.size(); ++i) {
+        MatrixXf output = cnn.forward(features_matrix[i]);
+        output = softmax(output);
+        cout << "Predicted output for sample " << i << ": " << endl << output << endl;
+        int predicted_class = output.row(0).maxCoeff(&predicted_class);
+        cout << predicted_class << endl;
+    }
 }
 
 int main(){

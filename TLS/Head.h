@@ -115,11 +115,41 @@ public:
 	}
 };
 
+class CNN {
+public:
+	CNN(int input_rows, int input_cols, int filter_size, int num_filters, int pool_size, int num_classes);
+    // 前向传播
+	MatrixXf forward(const MatrixXf& input);
+
+private:
+	int input_rows;
+	int input_cols;
+	int filter_size;
+	int num_filters;
+	int pool_size;
+	int num_classes;
+	vector<MatrixXf> weights;
+	vector<MatrixXf> biases;
+	MatrixXf fc_weights;
+	MatrixXf fc_bias;
+
+
+    // 卷积操作
+    void conv2d(const MatrixXf& input, const MatrixXf& kernel, MatrixXf& output);
+    // ReLU激活函数
+    MatrixXf relu(const MatrixXf& input);
+    // 最大池化操作
+    void max_pooling(const MatrixXf& input, int pool_size, MatrixXf& output);
+    // 全连接层
+    MatrixXf fully_connected(const MatrixXf& input, const MatrixXf& weights, const MatrixXf& bias);
+};
+
 void printPcapFileHeader(Pcap_Header* pfh);
 void printPcapHeader(Pcap_Packet_Header* ph);
 void printPcap(void* data, size_t size);
-void LoadData(vector<Feature>& f, vector<MatrixXf>& features, vector<int>& labels, const int& label);
+void LoadData(vector<Feature>& f, vector<MatrixXf>& features, vector<int>& labels, const int& label, int len);
 int Label_Number(string label);
+MatrixXf softmax(const MatrixXf& input);
 
 enum Website_label {
 	bd = 1, bz, tb, wb, 
