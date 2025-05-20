@@ -199,6 +199,17 @@ MatrixXf softmax(const MatrixXf& input) {
     // 按行归一化
     return exp_input / sum;
 }
+pair<MatrixXf, float> CNN::cross_entropy(const MatrixXf& prob, const vector<float>& labels) {
+    int num_classes = prob.cols();
+    float loss_value = 0.0f;
+    MatrixXf delta(1, num_classes);
+    for (int i = 0; i < num_classes; i++) {
+        delta(0, i) = prob[i] - labels[i];
+        loss_value += (labels[i] * log(prob[i]) + (1 - labels[i]) * log(1 - prob[i]));
+    }
+    loss_value = -loss_value / num_classes;
+    return make_pair(delta, loss_value);
+}
 
 int Label_Number(string label) {
     if (label == "bd")  return 1;

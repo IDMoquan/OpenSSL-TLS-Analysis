@@ -120,6 +120,7 @@ public:
 	CNN(int input_rows, int input_cols, int filter_size, int num_filters, int pool_size, int num_classes);
     // 前向传播
 	MatrixXf forward(const MatrixXf& input);
+	pair<MatrixXf, float> cross_entropy(const MatrixXf& prob, const vector<float>&labels);
 
 private:
 	int input_rows;

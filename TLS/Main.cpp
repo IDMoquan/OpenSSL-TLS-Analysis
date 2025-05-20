@@ -95,13 +95,29 @@ int train() {
     int input_rows =  max_count;
     int input_cols = 2;
     CNN cnn(input_rows, input_cols, 3, 1, 2, 10);   // 输入大小为 n 行 2 列，卷积核大小3x2，1个卷积核，池化大小2，10个类别
-    //前向传播
+    //训练
+    float loss = 0.0f;
     for (size_t i = 0; i < features_matrix.size(); ++i) {
         MatrixXf output = cnn.forward(features_matrix[i]);
         output = softmax(output);
         cout << "Predicted output for sample " << i << ": " << endl << output << endl;
-        int predicted_class = output.row(0).maxCoeff(&predicted_class);
+        int predicted_class;
+        output.row(0).maxCoeff(&predicted_class);
+        predicted_class++;
+        vector<float>current_label;
         cout << predicted_class << endl;
+        int right_class = labels[i];
+        for (int i = 0; i < 10; i++) {
+            if (i + 1 == right_class) {
+                current_label.push_back(1);
+            }
+            else {
+                current_label.push_back(0);
+            }
+        }
+        auto delta_loss = cnn.cross_entropy(output, current_label);
+        loss += delta_loss.second;
+        
     }
 }
 
