@@ -120,11 +120,16 @@ public:
 	CNN(int input_rows, int input_cols, int filter_size, int num_filters, int pool_size, int num_classes);
     // 前向传播
 	MatrixXf forward(const MatrixXf& input);
+	void backward(const float& loss, const MatrixXf &delta, const float& learning_rate);
 	pair<MatrixXf, float> cross_entropy(const MatrixXf& prob, const vector<float>&labels);
+	void display_weights() {
+		cout << weights[0] << endl;
+	}
 
 private:
 	int input_rows;
 	int input_cols;
+
 	int filter_size;
 	int num_filters;
 	int pool_size;
@@ -133,6 +138,9 @@ private:
 	vector<MatrixXf> biases;
 	MatrixXf fc_weights;
 	MatrixXf fc_bias;
+	MatrixXf conv_output;
+	MatrixXf pooled_output;
+	MatrixXf pooled_output_flattened;
 
 
     // 卷积操作
@@ -143,6 +151,10 @@ private:
     void max_pooling(const MatrixXf& input, int pool_size, MatrixXf& output);
     // 全连接层
     MatrixXf fully_connected(const MatrixXf& input, const MatrixXf& weights, const MatrixXf& bias);
+
+	void max_pooling_backward(const MatrixXf& d_output, int pool_size, MatrixXf& d_input);
+
+	void conv2d_backward(const MatrixXf& input, const MatrixXf& kernel, const MatrixXf& d_output, MatrixXf& d_input, MatrixXf& d_kernel);
 };
 
 void printPcapFileHeader(Pcap_Header* pfh);
