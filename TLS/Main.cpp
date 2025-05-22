@@ -95,11 +95,11 @@ int main(){
     }
     int input_rows = max_count;
     int input_cols = 2;
-    CNN cnn(input_rows, input_cols, 3, 1, 2, 10);   // 输入大小为 n 行 2 列，卷积核大小3x2，1个卷积核，池化大小2，10个类别
+    CNN cnn(input_rows, input_cols, 2, 3, 2, 10);   // 输入大小为 n 行 2 列，卷积核大小3x2，1个卷积核，池化大小2，10个类别
     //训练
-    for (int epoch = 0; epoch < 50; epoch++) {
+    for (int epoch = 0; epoch < 45; epoch++) {
         float loss = 0.0f;
-        float learning_rate = 0.0005;
+        float learning_rate = 0.001;
         int size = features_matrix.size();
         cout << "Epoch:" << epoch + 1 << endl;
         //cnn.display_weights();
@@ -129,19 +129,76 @@ int main(){
     }
     cout << "Train finished!" << endl;
     int res = 0;
-    for (size_t i = 0; i < features_matrix.size(); ++i) {
-        MatrixXf output = cnn.forward(features_matrix[i]);
+    vector<MatrixXf> test_features_matrix;
+    vector<int> test_labels;
+    folderPath = "Data\\test";
+    if (!exists(folderPath) || !is_directory(folderPath)) {
+        cout << "Folder doesn't exist!" << endl;
+        return -1;
+    }
+    dir_paths.clear();
+    for (const auto& entry : directory_iterator(folderPath)) {
+        if (is_directory(entry)) {
+            //std::cout << "Directory: " << entry.path() << " " << entry.path().filename() << std::endl;
+            dir_paths.push_back(entry.path());
+        }
+    }
+    //cout << name << ":" << max_count << endl;
+    for (const auto& p : dir_paths) {
+        for (const auto& entry : directory_iterator(p)) {
+            string Pcap_File = entry.path().string();
+            //cout << Pcap_File << endl;
+            Pcap_Header* ph = new Pcap_Header;
+            Pcap_Packet_Header* pph = new Pcap_Packet_Header;
+            Ethernet2* e2;
+            Protocol* ptc;
+            TC_Protocol* tc_ptc;
+
+            ifstream pf;
+            pf.open(Pcap_File, ios::in | ios::binary);
+            if (!pf) {
+                cout << "Open File Error!" << endl;
+                return -1;
+            }
+            pf.read((char*)ph, sizeof(Pcap_Header));
+            //printPcapFileHeader(ph);
+            vector<Feature>features;
+            while (pf.read((char*)pph, sizeof(Pcap_Packet_Header))) {
+                //pf.read((char*)pph, sizeof(Pcap_Packet_Header));
+                //printPcapHeader(pph);
+                char* buffer = (char*)malloc(pph->caplen);
+                pf.read((char*)buffer, pph->caplen);
+                e2 = (Ethernet2*)buffer;
+                ptc = (Protocol*)(buffer + sizeof(Ethernet2));
+                tc_ptc = (TC_Protocol*)(buffer + sizeof(Ethernet2) + sizeof(Protocol));
+                //printPcap(e2, sizeof(Ethernet2));
+                //printPcap(ptc, sizeof(Protocol));
+                //printPcap(tc_ptc, sizeof(TC_Protocol));
+                //printPcap(buffer, pph->caplen);
+                //cout << (short)ptc->destination_address.a1 << "." << (short)ptc->destination_address.a2 << "." << (short)ptc->destination_address.a3 << "." << (short)ptc->destination_address.a4 << endl;
+                //cout << "端口：" << ntohs((short)tc_ptc->destination_port) << endl;
+                //printPcap(&(tc_ptc->destination_port), sizeof(short));
+                features.push_back(Feature(pph->caplen, (short)ntohs(tc_ptc->destination_port)));
+                free(buffer);
+                //CNN(features);
+            }
+            LoadData(features, test_features_matrix, test_labels, Label_Number(p.filename().string()), max_count);
+            //cout << test_features_matrix.back() << endl;
+        }
+    }
+    for (size_t i = 0; i < test_features_matrix.size(); ++i) {
+        MatrixXf output = cnn.forward(test_features_matrix[i]);
         output = softmax(output);
-        //cout << "Predicted output for sample " << i << ": " << endl << output << endl;
+        cout << "Predicted output for sample " << i << ": " << endl << output << endl;
         int predicted_class;
         output.row(0).maxCoeff(&predicted_class);
         predicted_class++;
         vector<float>current_label;
         cout << predicted_class << endl;
-        if (predicted_class == labels[i]) {
+        if (predicted_class == test_labels[i]) {
             res++;
         }
     }
-    cout << "Accurrcy: " << fixed << setprecision(2) << 1.0 * res * 100 / features_matrix.size() << "%" << endl;
+    cout << "Accurrcy: " << fixed << setprecision(2) << 1.0 * res * 100 / test_features_matrix.size() << "%" << endl;
     return 0;
 }
