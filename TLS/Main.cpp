@@ -1,7 +1,6 @@
 #pragma once
 #include <filesystem>
 #include "Head.h"
-//#define Pcap_File "./Data/2.pcap"
 #define MAX_ETH_FRAME 1514
 using namespace std;
 using namespace Eigen;
@@ -21,7 +20,6 @@ int main(){
     vector<path>dir_paths;
     for (const auto& entry : directory_iterator(folderPath)) {
         if (is_directory(entry)) {
-            //std::cout << "Directory: " << entry.path() << " " << entry.path().filename() << std::endl;
             dir_paths.push_back(entry.path());
         }
     }
@@ -51,11 +49,9 @@ int main(){
             }
         }
     }
-    //cout << name << ":" << max_count << endl;
     for (const auto& p : dir_paths) {
         for (const auto& entry : directory_iterator(p)) {
             string Pcap_File = entry.path().string();
-            //cout << Pcap_File << endl;
             Pcap_Header* ph = new Pcap_Header;
             Pcap_Packet_Header* pph = new Pcap_Packet_Header;
             Ethernet2* e2;
@@ -69,26 +65,15 @@ int main(){
                 return -1;
             }
             pf.read((char*)ph, sizeof(Pcap_Header));
-            //printPcapFileHeader(ph);
             vector<Feature>features;
             while (pf.read((char*)pph, sizeof(Pcap_Packet_Header))) {
-                //pf.read((char*)pph, sizeof(Pcap_Packet_Header));
-                //printPcapHeader(pph);
                 char* buffer = (char*)malloc(pph->caplen);
                 pf.read((char*)buffer, pph->caplen);
                 e2 = (Ethernet2*)buffer;
                 ptc = (Protocol*)(buffer + sizeof(Ethernet2));
                 tc_ptc = (TC_Protocol*)(buffer + sizeof(Ethernet2) + sizeof(Protocol));
-                //printPcap(e2, sizeof(Ethernet2));
-                //printPcap(ptc, sizeof(Protocol));
-                //printPcap(tc_ptc, sizeof(TC_Protocol));
-                //printPcap(buffer, pph->caplen);
-                //cout << (short)ptc->destination_address.a1 << "." << (short)ptc->destination_address.a2 << "." << (short)ptc->destination_address.a3 << "." << (short)ptc->destination_address.a4 << endl;
-                //cout << "¶Ë¿Ú£º" << ntohs((short)tc_ptc->destination_port) << endl;
-                //printPcap(&(tc_ptc->destination_port), sizeof(short));
                 features.push_back(Feature(pph->caplen, (short)ntohs(tc_ptc->destination_port)));
                 free(buffer);
-                //CNN(features);
             }
             LoadData(features, features_matrix, labels, Label_Number(p.filename().string()), max_count);
         }
@@ -102,16 +87,13 @@ int main(){
         float learning_rate = 0.001;
         int size = features_matrix.size();
         cout << "Epoch:" << epoch + 1 << endl;
-        //cnn.display_weights();
         for (size_t i = 0; i < size; ++i) {
             MatrixXf output = cnn.forward(features_matrix[i]);
             output = softmax(output);
-            //cout << "Predicted output for sample " << i << ": " << endl << output << endl;
             int predicted_class;
             output.row(0).maxCoeff(&predicted_class);
             predicted_class++;
             vector<float>current_label;
-            //cout << predicted_class << endl;
             int right_class = labels[i];
             for (int i = 0; i < 10; i++) {
                 if (i + 1 == right_class) {
@@ -139,15 +121,12 @@ int main(){
     dir_paths.clear();
     for (const auto& entry : directory_iterator(folderPath)) {
         if (is_directory(entry)) {
-            //std::cout << "Directory: " << entry.path() << " " << entry.path().filename() << std::endl;
             dir_paths.push_back(entry.path());
         }
     }
-    //cout << name << ":" << max_count << endl;
     for (const auto& p : dir_paths) {
         for (const auto& entry : directory_iterator(p)) {
             string Pcap_File = entry.path().string();
-            //cout << Pcap_File << endl;
             Pcap_Header* ph = new Pcap_Header;
             Pcap_Packet_Header* pph = new Pcap_Packet_Header;
             Ethernet2* e2;
@@ -161,29 +140,17 @@ int main(){
                 return -1;
             }
             pf.read((char*)ph, sizeof(Pcap_Header));
-            //printPcapFileHeader(ph);
             vector<Feature>features;
             while (pf.read((char*)pph, sizeof(Pcap_Packet_Header))) {
-                //pf.read((char*)pph, sizeof(Pcap_Packet_Header));
-                //printPcapHeader(pph);
                 char* buffer = (char*)malloc(pph->caplen);
                 pf.read((char*)buffer, pph->caplen);
                 e2 = (Ethernet2*)buffer;
                 ptc = (Protocol*)(buffer + sizeof(Ethernet2));
                 tc_ptc = (TC_Protocol*)(buffer + sizeof(Ethernet2) + sizeof(Protocol));
-                //printPcap(e2, sizeof(Ethernet2));
-                //printPcap(ptc, sizeof(Protocol));
-                //printPcap(tc_ptc, sizeof(TC_Protocol));
-                //printPcap(buffer, pph->caplen);
-                //cout << (short)ptc->destination_address.a1 << "." << (short)ptc->destination_address.a2 << "." << (short)ptc->destination_address.a3 << "." << (short)ptc->destination_address.a4 << endl;
-                //cout << "¶Ë¿Ú£º" << ntohs((short)tc_ptc->destination_port) << endl;
-                //printPcap(&(tc_ptc->destination_port), sizeof(short));
                 features.push_back(Feature(pph->caplen, (short)ntohs(tc_ptc->destination_port)));
                 free(buffer);
-                //CNN(features);
             }
             LoadData(features, test_features_matrix, test_labels, Label_Number(p.filename().string()), max_count);
-            //cout << test_features_matrix.back() << endl;
         }
     }
     for (size_t i = 0; i < test_features_matrix.size(); ++i) {

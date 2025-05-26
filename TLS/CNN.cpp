@@ -4,81 +4,6 @@
 using namespace std;
 using namespace Eigen;
 
-void printPcapFileHeader(Pcap_Header* pfh) {
-    if (pfh == NULL) {
-        return;
-    }
-    printf("=====================\n"
-        "magic:0x%0x\n"
-        "version_major:%u\n"
-        "version_minor:%u\n"
-        "thiszone:%d\n"
-        "sigfigs:%u\n"
-        "snaplen:%u\n"
-        "linktype:%u\n"
-        "=====================\n",
-        pfh->magic,
-        pfh->major,
-        pfh->minor,
-        pfh->thiszone,
-        pfh->sigfigs,
-        pfh->snaplen,
-        pfh->linktype);
-}
-
-void printPcapHeader(Pcap_Packet_Header* ph) {
-    if (ph == NULL) {
-        return;
-    }
-    printf("=====================\n"
-        "ts.timestamp_s:%u\n"
-        "ts.timestamp_ms:%u\n"
-        "capture_len:%u\n"
-        "len:%d\n"
-        "=====================\n",
-        ph->timestamp_sec,
-        ph->timestamp_msec,
-        ph->caplen,
-        ph->len);
-}
-
-void printPcap(void* data, size_t size) {
-    unsigned  short iPos = 0;
-    //int * p = (int *)data;
-    //unsigned short* p = (unsigned short *)data;
-    if (data == NULL) {
-        return;
-    }
-    printf("\n==data:0x%x,len:%lu=========", data, size);
-
-    for (iPos = 0; iPos < size / sizeof(unsigned short); iPos++) {
-        //printf(" %x ",(int)( * (p+iPos) ));
-        //unsigned short a = ntohs(p[iPos]);
-
-        unsigned short a = ntohs(*((unsigned short*)data + iPos));
-        if (iPos % 8 == 0) printf("\n");
-        if (iPos % 4 == 0) printf(" ");
-
-        printf("%04x", a);
-
-
-    }
-    /*
-     for (iPos=0; iPos <= size/sizeof(int); iPos++) {
-        //printf(" %x ",(int)( * (p+iPos) ));
-        int a = ntohl(p[iPos]);
-
-        //int a = ntohl( *((int *)data + iPos ) );
-        if (iPos %4==0) printf("\n");
-
-        printf("%08x ",a);
-
-
-    }
-     */
-    printf("\n============\n");
-}
-
 void LoadData(vector<Feature>& f ,vector<MatrixXf>& features, vector<int>& labels, const int& label, int len) {
     int size = f.size();
     MatrixXf feature(len, 2);
@@ -90,7 +15,6 @@ void LoadData(vector<Feature>& f ,vector<MatrixXf>& features, vector<int>& label
         feature(i, 0) = 0.0f;
         feature(i, 1) = 0.0f;
     }
-    //cout << feature <<  " " << label <<endl << "---------------------" << endl;
     features.push_back(feature);
     labels.push_back(label);
 }
@@ -164,6 +88,7 @@ MatrixXf CNN::relu(const MatrixXf& input) {
     return input.unaryExpr([](float x) { return max(0.0f, x); });
 }
 
+//池化层
 void CNN::max_pooling(const MatrixXf& input, int pool_size, MatrixXf& output) {
     int input_rows = input.rows();
     int input_cols = input.cols();
@@ -189,15 +114,9 @@ MatrixXf CNN::fully_connected(const MatrixXf& input, const MatrixXf& weights, co
 MatrixXf softmax(const MatrixXf& input) {
     float max_vals = input.maxCoeff();
     MatrixXf shifted_input = input.array() - max_vals;
-    //cout << "input" << input << endl;
-    //cout << "shift_input" << shifted_input << endl;
     // 计算每个元素的指数
     MatrixXf exp_input = shifted_input.array().exp();
-    //cout << "exp:" << exp_input << endl;
-    //cout << "exp_former:" << input.array().exp();
-
     float sum = exp_input.sum();
-    //cout << exp_input / sum << endl;
 
     // 归一化
     return exp_input / sum;
@@ -211,7 +130,6 @@ pair<MatrixXf, float> CNN::cross_entropy(const MatrixXf& prob, const vector<floa
         loss_value += (labels[i] * log(prob(0, i)));
     }
     loss_value = -loss_value / num_classes;
-    //cout << delta << endl;
     return make_pair(delta, loss_value);
 }
 
@@ -240,15 +158,11 @@ void CNN::backward(const float& loss, const MatrixXf& delta, const float& learni
         MatrixXf d_input;
         MatrixXf d_kernel;
         conv2d_backward(conv_output, weights[i], d_conv_output, d_input, d_kernel);
-        //cout << "d_input" << endl << d_input(0, 0) << endl;
         weights[i] -= learning_rate * d_kernel;
         biases[i](0,0) -= learning_rate * d_input.sum();
     }
 }
 
-
-
-// 计算输入梯度和卷积核梯度
 void CNN::conv2d_backward(const MatrixXf& input, const MatrixXf& kernel,
     const MatrixXf& d_output, MatrixXf& d_input, MatrixXf& d_kernel) {
     int kernel_size = kernel.rows();
@@ -277,7 +191,6 @@ void CNN::conv2d_backward(const MatrixXf& input, const MatrixXf& kernel,
         }
     }
 }
-
 
 void CNN::max_pooling_backward(const MatrixXf& d_output, int pool_size, MatrixXf& d_input) {
     int output_rows = d_output.rows();
@@ -308,7 +221,6 @@ void CNN::max_pooling_backward(const MatrixXf& d_output, int pool_size, MatrixXf
         }
     }
 }
-
 
 int Label_Number(string label) {
     if (label == "bd")  return 1;
