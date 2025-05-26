@@ -157,12 +157,10 @@ private:
 	void conv2d_backward(const MatrixXf& input, const MatrixXf& kernel, const MatrixXf& d_output, MatrixXf& d_input, MatrixXf& d_kernel);
 };
 
-void printPcapFileHeader(Pcap_Header* pfh);
-void printPcapHeader(Pcap_Packet_Header* ph);
-void printPcap(void* data, size_t size);
 void LoadData(vector<Feature>& f, vector<MatrixXf>& features, vector<int>& labels, const int& label, int len);
 int Label_Number(string label);
 MatrixXf softmax(const MatrixXf& input);
+string Website_Name(int label);
 
 enum Website_label {
 	bd = 1, bz, tb, wb, 

@@ -1,14 +1,14 @@
-#pragma once
+ï»¿#pragma once
 #include <vector>
 #include "Head.h"
 using namespace std;
 using namespace Eigen;
 
 void LoadData(vector<Feature>& f ,vector<MatrixXf>& features, vector<int>& labels, const int& label, int len) {
-    int size = f.size();
+    int size = static_cast<int>(f.size());
     MatrixXf feature(len, 2);
     for (int i = 0; i < size; i++) {
-        feature(i, 0) = f[i].GetSize();
+        feature(i, 0) = static_cast<float>(f[i].GetSize());
         feature(i, 1) = f[i].GetDirection();
     }
     for (int i = size; i < len; i++) {
@@ -21,55 +21,55 @@ void LoadData(vector<Feature>& f ,vector<MatrixXf>& features, vector<int>& label
 
 CNN::CNN(int input_rows, int input_cols, int filter_size, int num_filters, int pool_size, int num_classes)
     : input_rows(input_rows), input_cols(input_cols), filter_size(filter_size), num_filters(num_filters), pool_size(pool_size), num_classes(num_classes) {
-    // ³õÊ¼»¯¾í»ıºËºÍÆ«ÖÃ
+    // åˆå§‹åŒ–å·ç§¯æ ¸å’Œåç½®
     weights.resize(num_filters);
     biases.resize(num_filters);
     for (int i = 0; i < num_filters; ++i) {
         weights[i] = MatrixXf::Random(filter_size, input_cols);
-        biases[i] = MatrixXf::Random(1, 1); // ³õÊ¼»¯Æ«ÖÃÏîÎªËæ»úÖµ
+        biases[i] = MatrixXf::Random(1, 1); // åˆå§‹åŒ–åç½®é¡¹ä¸ºéšæœºå€¼
     }
 
-    // ³õÊ¼»¯È«Á¬½Ó²ãÈ¨ÖØºÍÆ«ÖÃ
+    // åˆå§‹åŒ–å…¨è¿æ¥å±‚æƒé‡å’Œåç½®
     int fc_input_size = ((input_rows - filter_size + 1) / pool_size) * input_cols;
     fc_weights = MatrixXf::Random(fc_input_size, num_classes);
     fc_bias = MatrixXf::Random(1, num_classes);
 }
 
-// Ç°Ïò´«²¥
+// å‰å‘ä¼ æ’­
 MatrixXf CNN::forward(const MatrixXf& input) {
-    // ¾í»ı²ã
+    // å·ç§¯å±‚
     for (int i = 0; i < num_filters; ++i) {
-        MatrixXf temp_output(input_rows - filter_size + 1, input_cols); // ÁÙÊ±±äÁ¿´æ´¢¾í»ıÊä³ö
+        MatrixXf temp_output(input_rows - filter_size + 1, input_cols); // ä¸´æ—¶å˜é‡å­˜å‚¨å·ç§¯è¾“å‡º
         conv2d(input, weights[i], temp_output);
-        float bias_value = biases[i](0, 0); // »ñÈ¡Æ«ÖÃÏîµÄ±êÁ¿Öµ
-        temp_output = temp_output.array() + bias_value; // ½«Æ«ÖÃÏî¼Óµ½¾í»ıÊä³ö
-        temp_output = relu(temp_output); // ReLU¼¤»î
+        float bias_value = biases[i](0, 0); // è·å–åç½®é¡¹çš„æ ‡é‡å€¼
+        temp_output = temp_output.array() + bias_value; // å°†åç½®é¡¹åŠ åˆ°å·ç§¯è¾“å‡º
+        temp_output = relu(temp_output); // ReLUæ¿€æ´»
         if (i == 0) {
-            conv_output = temp_output; // µÚÒ»´Î¾í»ıºó³õÊ¼»¯conv_output
+            conv_output = temp_output; // ç¬¬ä¸€æ¬¡å·ç§¯ååˆå§‹åŒ–conv_output
         }
         else {
-            conv_output += temp_output; // ÀÛ¼Ó¾í»ıÊä³ö
+            conv_output += temp_output; // ç´¯åŠ å·ç§¯è¾“å‡º
         }
     }
 
-    // ³Ø»¯²ã
+    // æ± åŒ–å±‚
     max_pooling(conv_output, pool_size, pooled_output);
 
-    // ½«³Ø»¯²ãµÄÊä³öÕ¹Æ½ÎªÒ»Î¬ÏòÁ¿
+    // å°†æ± åŒ–å±‚çš„è¾“å‡ºå±•å¹³ä¸ºä¸€ç»´å‘é‡
     pooled_output_flattened = Eigen::Map<MatrixXf>(pooled_output.data(), pooled_output.size(), 1).transpose();
 
-    // È«Á¬½Ó²ã
+    // å…¨è¿æ¥å±‚
     MatrixXf fc_output =  fully_connected(pooled_output_flattened, fc_weights, fc_bias);
 
     return softmax(fc_output);
 
 }
 
-// ¾í»ı²Ù×÷
+// å·ç§¯æ“ä½œ
 void CNN::conv2d(const MatrixXf& input, const MatrixXf& kernel, MatrixXf& output) {
-    int kernel_size = kernel.rows();
-    int input_rows = input.rows();
-    int input_cols = input.cols();
+    int kernel_size = static_cast<int>(kernel.rows());
+    int input_rows = static_cast<int>(input.rows());
+    int input_cols = static_cast<int>(input.cols());
     int output_rows = input_rows - kernel_size + 1;
     output.resize(output_rows, input_cols);
     for (int i = 0; i < output_rows; ++i) {
@@ -83,15 +83,15 @@ void CNN::conv2d(const MatrixXf& input, const MatrixXf& kernel, MatrixXf& output
     }
 }
 
-// ReLU¼¤»îº¯Êı
+// ReLUæ¿€æ´»å‡½æ•°
 MatrixXf CNN::relu(const MatrixXf& input) {
     return input.unaryExpr([](float x) { return max(0.0f, x); });
 }
 
-//³Ø»¯²ã
+//æ± åŒ–å±‚
 void CNN::max_pooling(const MatrixXf& input, int pool_size, MatrixXf& output) {
-    int input_rows = input.rows();
-    int input_cols = input.cols();
+    int input_rows = static_cast<int>(input.rows());
+    int input_cols = static_cast<int>(input.cols());
     int output_rows = input_rows / pool_size;
     output.resize(output_rows, input_cols);
     for (int i = 0; i < output_rows; ++i) {
@@ -105,7 +105,7 @@ void CNN::max_pooling(const MatrixXf& input, int pool_size, MatrixXf& output) {
     }
 }
 
-// È«Á¬½Ó²ã
+// å…¨è¿æ¥å±‚
 MatrixXf CNN::fully_connected(const MatrixXf& input, const MatrixXf& weights, const MatrixXf& bias) {
     //cout << input.cols() << " " << weights.rows() << endl;
     return (input * weights).rowwise() + bias.row(0);
@@ -114,15 +114,15 @@ MatrixXf CNN::fully_connected(const MatrixXf& input, const MatrixXf& weights, co
 MatrixXf softmax(const MatrixXf& input) {
     float max_vals = input.maxCoeff();
     MatrixXf shifted_input = input.array() - max_vals;
-    // ¼ÆËãÃ¿¸öÔªËØµÄÖ¸Êı
+    // è®¡ç®—æ¯ä¸ªå…ƒç´ çš„æŒ‡æ•°
     MatrixXf exp_input = shifted_input.array().exp();
     float sum = exp_input.sum();
 
-    // ¹éÒ»»¯
+    // å½’ä¸€åŒ–
     return exp_input / sum;
 }
 pair<MatrixXf, float> CNN::cross_entropy(const MatrixXf& prob, const vector<float>& labels) {
-    int num_classes = prob.cols();
+    int num_classes = static_cast<int>(prob.cols());
     float loss_value = 0.0f;
     MatrixXf delta(1, num_classes);
     for (int i = 0; i < num_classes; i++) {
@@ -134,23 +134,24 @@ pair<MatrixXf, float> CNN::cross_entropy(const MatrixXf& prob, const vector<floa
 }
 
 void CNN::backward(const float& loss, const MatrixXf& delta, const float& learning_rate) {
-    // ¼ÆËãÈ«Á¬½Ó²ãµÄÌİ¶È
-    MatrixXf d_fc_weights = pooled_output_flattened.transpose() * delta;
+    float lambda = 0.001;
+    // è®¡ç®—å…¨è¿æ¥å±‚çš„æ¢¯åº¦
+    MatrixXf d_fc_weights = pooled_output_flattened.transpose() * delta + lambda * fc_weights;;
     MatrixXf d_fc_bias = delta.colwise().sum();
 
-    // ¶ÔÌİ¶È½øĞĞ²Ã¼ô
+    // å¯¹æ¢¯åº¦è¿›è¡Œè£å‰ª
     d_fc_weights = d_fc_weights.cwiseMax(-1.0).cwiseMin(1.0);
     d_fc_bias = d_fc_bias.cwiseMax(-1.0).cwiseMin(1.0);
 
-    // ¸üĞÂÈ«Á¬½Ó²ãµÄÈ¨ÖØºÍÆ«ÖÃ
+    // æ›´æ–°å…¨è¿æ¥å±‚çš„æƒé‡å’Œåç½®
     fc_weights -= learning_rate * d_fc_weights;
     fc_bias -= learning_rate * d_fc_bias;
 
-    // ·´Ïò´«²¥µ½³Ø»¯²ã
+    // åå‘ä¼ æ’­åˆ°æ± åŒ–å±‚
     MatrixXf d_pooled_output_flattened = delta * fc_weights.transpose();
     MatrixXf d_pooled_output = Eigen::Map<MatrixXf>(d_pooled_output_flattened.data(), pooled_output.rows(), pooled_output.cols());
 
-    // ·´Ïò´«²¥µ½¾í»ı²ã
+    // åå‘ä¼ æ’­åˆ°å·ç§¯å±‚
     MatrixXf d_conv_output;
     max_pooling_backward(d_pooled_output, pool_size, d_conv_output);
 
@@ -165,11 +166,11 @@ void CNN::backward(const float& loss, const MatrixXf& delta, const float& learni
 
 void CNN::conv2d_backward(const MatrixXf& input, const MatrixXf& kernel,
     const MatrixXf& d_output, MatrixXf& d_input, MatrixXf& d_kernel) {
-    int kernel_size = kernel.rows();
-    int input_rows = input.rows();
-    int input_cols = input.cols();
-    int output_rows = d_output.rows();
-    int output_cols = d_output.cols();
+    int kernel_size = static_cast<int>(kernel.rows());
+    int input_rows = static_cast<int>(input.rows());
+    int input_cols = static_cast<int>(input.cols());
+    int output_rows = static_cast<int>(d_output.rows());
+    int output_cols = static_cast<int>(d_output.cols());
 
     d_input.resizeLike(input);
     d_input.setZero();
@@ -193,8 +194,8 @@ void CNN::conv2d_backward(const MatrixXf& input, const MatrixXf& kernel,
 }
 
 void CNN::max_pooling_backward(const MatrixXf& d_output, int pool_size, MatrixXf& d_input) {
-    int output_rows = d_output.rows();
-    int output_cols = d_output.cols();
+    int output_rows = static_cast<int>(d_output.rows());
+    int output_cols = static_cast<int>(d_output.cols());
     int input_rows = output_rows * pool_size;
     int input_cols = output_cols;
     d_input.resize(input_rows, input_cols);
@@ -222,6 +223,7 @@ void CNN::max_pooling_backward(const MatrixXf& d_output, int pool_size, MatrixXf
     }
 }
 
+//é€šè¿‡æ–‡ä»¶å¤¹åç§°è¿”å›å¯¹åº”æ ‡ç­¾
 int Label_Number(string label) {
     if (label == "bd")  return 1;
     if (label == "bz")  return 2;
@@ -233,4 +235,19 @@ int Label_Number(string label) {
     if (label == "tb")  return 8;
     if (label == "wb")  return 9;
     if (label == "zh")  return 10;
+    else return -1;
+}
+
+string Website_Name(int label) {
+    if (label == 1)  return "www.baidu.com";
+    if (label == 2)  return "www.bilibili.com";
+    if (label == 3)  return "www.csdn.com";
+    if (label == 4)  return "www.github.com";
+    if (label == 5)  return "www.iqiyi.com";
+    if (label == 6)  return "www.maoyan.com";
+    if (label == 7)  return "www.qidian.com";
+    if (label == 8)  return "www.taobao.com";
+    if (label == 9)  return "www.weibo.com";
+    if (label == 10)  return "www.zhihu.com";
+    else return "null";
 }

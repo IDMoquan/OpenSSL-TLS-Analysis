@@ -1,4 +1,4 @@
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
+﻿#define _WINSOCK_DEPRECATED_NO_WARNINGS
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>
@@ -49,7 +49,6 @@ int main() {
     sin.sin_port = htons(port);
     sin.sin_addr = *(in_addr*)ip->h_addr_list[0];
 
-    //printf("%d",sin.sin_addr);
     struct in_addr addr;
     memcpy(&addr, ip->h_addr_list[0], sizeof(struct in_addr));
     std::cout << host << "'s IP: " << inet_ntoa(addr) << std::endl;
