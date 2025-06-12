@@ -1,3 +1,4 @@
+#pragma once
 #include <WinSock2.h>
 #include <Eigen/Dense>
 #include <vector>
@@ -18,18 +19,18 @@ using namespace filesystem;
 // 网络字节序结构体定义
 #pragma pack(push, 1)
 struct Pcap_Header {
-    unsigned int magic;             //0xA1 B2 C3 D4:用来标示文件的开始
-    unsigned short major;           //0×02 00:当前文件主要的版本号
-    unsigned short minor;           //0×04 00当前文件次要的版本号
-    int thiszone;                   //当地的标准时间；全零
-    unsigned int sigfigs;           //时间戳的精度；全零
+    unsigned int magic;              //0xA1 B2 C3 D4:用来标示文件的开始
+    unsigned short major;          //0×02 00:当前文件主要的版本号
+    unsigned short minor;          //0×04 00当前文件次要的版本号
+    int thiszone;                          //当地的标准时间；全零
+    unsigned int sigfigs;             //时间戳的精度；全零
     unsigned int snaplen;           //最大的存储长度
     unsigned int linktype;          //链路类型*
 };
 
 struct Pcap_Packet_Header {
-    unsigned int timestamp_sec;     //时间戳高位(second)
-    unsigned int timestamp_msec;    //时间戳低位(microsecond)
+    unsigned int timestamp_sec;         //时间戳高位(second)
+    unsigned int timestamp_msec;      //时间戳低位(microsecond)
     unsigned int caplen;
     unsigned int len;
 };
@@ -83,522 +84,67 @@ private:
     unsigned int size;
     bool direction_send;
 public:
-    Feature(unsigned int& s, const short& port) {
-        size = s;
-        //通过端口判断传输方向
-        if (port == 443) {
-            direction_send = 1;
-        }
-        else {
-            direction_send = 0;
-        }
-    }
+    Feature(unsigned int& s, const short& port);
 
-    unsigned int GetSize() const {
-        return size;
-    }
-
-    bool GetDirection() const {
-        return direction_send;
-    }
+    unsigned int GetSize() const;
+    bool GetDirection() const;
 };
 
-// 激活函数
-double sigmoid(double x) {
-    return 1.0 / (1.0 + exp(-x));
-}
-
-double sigmoid_derivative(double x) {
-    double sig = sigmoid(x);
-    return sig * (1 - sig);
-}
+//激活函数
+double sigmoid(double x);
+double sigmoid_derivative(double x);
 
 class CNN {
 private:
-    int rows;            // 矩阵行数
-    int cols;            // 矩阵列数 (固定为5)
+    int rows;                // 矩阵行数
+    int cols;                 // 矩阵列数 (固定为5)
     int hidden_size;     // 隐藏层神经元数量
     int output_size;     // 输出类别数量(网站数量)
 
     // 权重矩阵和偏置向量
-    MatrixXd weights_input_hidden;  // 输入到隐藏层的权重
-    VectorXd bias_hidden;           // 隐藏层偏置
-    MatrixXd weights_hidden_output; // 隐藏层到输出层的权重
-    VectorXd bias_output;           // 输出层偏置
+    MatrixXd weights_input_hidden;    // 输入到隐藏层的权重
+    VectorXd bias_hidden;                    // 隐藏层偏置
+    MatrixXd weights_hidden_output;  // 隐藏层到输出层的权重
+    VectorXd bias_output;                    // 输出层偏置
 
     // 学习率
     double learning_rate;
 
 public:
     // 构造函数
-    CNN(int matrix_rows, int matrix_cols, int hidden_dim, int output_dim, double lr = 0.01, bool reproducible = true)
-        : rows(matrix_rows), cols(matrix_cols), hidden_size(hidden_dim), output_size(output_dim), learning_rate(lr) {
-
-        // 初始化随机数生成器
-        mt19937 gen;
-
-        if (reproducible) {
-            // 固定种子，确保实验可重复
-            unsigned int seed = 42;
-            gen = mt19937(seed);
-        }
-        else {
-            // 不可预测的随机数生成
-            random_device rd;
-            vector<unsigned int> seeds(mt19937::state_size);
-            generate_n(seeds.data(), seeds.size(), ref(rd));
-            seed_seq seed_seq(seeds.begin(), seeds.end());
-            gen = mt19937(seed_seq);
-        }
-
-        // 使用Xavier初始化
-        double fan_in = rows * cols;
-        double fan_out = hidden_size;
-        double stddev = sqrt(2.0 / (fan_in + fan_out));
-        normal_distribution<> dist(0.0, stddev);
-
-        // 输入到隐藏层的权重: hidden_size x (rows * cols)
-        weights_input_hidden = MatrixXd::Zero(hidden_size, rows * cols);
-        bias_hidden = VectorXd::Zero(hidden_size);
-
-        // 隐藏层到输出层的权重: output_size x hidden_size
-        weights_hidden_output = MatrixXd::Zero(output_size, hidden_size);
-        bias_output = VectorXd::Zero(output_size);
-
-        // 随机初始化权重
-        for (int i = 0; i < hidden_size; ++i) {
-            for (int j = 0; j < rows * cols; ++j) {
-                weights_input_hidden(i, j) = dist(gen);
-            }
-            bias_hidden(i) = dist(gen);
-        }
-
-        // 隐藏层到输出层的权重使用相同的初始化方法
-        fan_in = hidden_size;
-        fan_out = output_size;
-        stddev = sqrt(2.0 / (fan_in + fan_out));
-        normal_distribution<> dist2(0.0, stddev);
-
-        for (int i = 0; i < output_size; ++i) {
-            for (int j = 0; j < hidden_size; ++j) {
-                weights_hidden_output(i, j) = dist2(gen);
-            }
-            bias_output(i) = dist2(gen);
-        }
-    }
+    CNN(int matrix_rows, int matrix_cols, int hidden_dim, int output_dim, double lr = 0.01, bool reproducible = true);
 
     // 前向传播
-    VectorXd forward(const MatrixXd& input) {
-        // 将矩阵转换为向量（但在计算中保持矩阵结构）
-        VectorXd input_vec = Map<const VectorXd>(input.data(), rows * cols);
-
-        // 输入层到隐藏层
-        VectorXd hidden = weights_input_hidden * input_vec + bias_hidden;
-        for (int i = 0; i < hidden.size(); ++i) {
-            hidden(i) = sigmoid(hidden(i));
-        }
-
-        // 隐藏层到输出层
-        VectorXd output = weights_hidden_output * hidden + bias_output;
-        for (int i = 0; i < output.size(); ++i) {
-            output(i) = sigmoid(output(i));
-        }
-
-        return output;
-    }
+    VectorXd forward(const MatrixXd& input);
 
     // 反向传播和参数更新
-    void backward(const MatrixXd& input, const VectorXd& target) {
-        // 将矩阵转换为向量（但在计算中保持矩阵结构）
-        VectorXd input_vec = Map<const VectorXd>(input.data(), rows * cols);
-
-        // 前向传播(保存中间结果用于反向传播)
-        VectorXd hidden_input = weights_input_hidden * input_vec + bias_hidden;
-        VectorXd hidden_output = hidden_input.unaryExpr([](double x) { return sigmoid(x); });
-
-        VectorXd final_input = weights_hidden_output * hidden_output + bias_output;
-        VectorXd final_output = final_input.unaryExpr([](double x) { return sigmoid(x); });
-
-        // 计算输出层误差
-        VectorXd output_error = final_output - target;
-        VectorXd output_delta = output_error.cwiseProduct(
-            final_input.unaryExpr([](double x) { return sigmoid_derivative(x); }));
-
-        // 计算隐藏层误差
-        VectorXd hidden_error = weights_hidden_output.transpose() * output_delta;
-        VectorXd hidden_delta = hidden_error.cwiseProduct(
-            hidden_input.unaryExpr([](double x) { return sigmoid_derivative(x); }));
-
-        // 更新权重和偏置
-        weights_hidden_output -= learning_rate * output_delta * hidden_output.transpose();
-        bias_output -= learning_rate * output_delta;
-
-        weights_input_hidden -= learning_rate * hidden_delta * input_vec.transpose();
-        bias_hidden -= learning_rate * hidden_delta;
-    }
+    void backward(const MatrixXd& input, const VectorXd& target);
 
     // 训练模型
-    void train(const vector<MatrixXd>& featureMatrices, const vector<VectorXd>& labels, int epochs) {
-        int num_samples = featureMatrices.size();
-
-        for (int epoch = 0; epoch < epochs; ++epoch) {
-            double total_loss = 0.0;
-
-            for (int i = 0; i < num_samples; ++i) {
-                // 确保矩阵大小正确
-                if (featureMatrices[i].rows() != rows || featureMatrices[i].cols() != cols) {
-                    cerr << "Error: Matrix " << i << " has incorrect dimensions!" << endl;
-                    continue;
-                }
-
-                // 前向传播
-                VectorXd prediction = forward(featureMatrices[i]);
-
-                // 计算损失
-                VectorXd error = prediction - labels[i];
-                double loss = error.squaredNorm() / 2.0;
-                total_loss += loss;
-
-                // 反向传播
-                backward(featureMatrices[i], labels[i]);
-            }
-
-            // 打印平均损失
-            double avg_loss = total_loss / num_samples;
-            cout << "Epoch " << epoch + 1 << "/" << epochs
-                << ", Average Loss: " << avg_loss << endl;
-        }
-    }
+    void train(const vector<MatrixXd>& featureMatrices, const vector<VectorXd>& labels, int epochs);
 
     // 预测
-    int predict(const MatrixXd& featureMatrix) {
-        // 确保矩阵大小正确
-        if (featureMatrix.rows() != rows || featureMatrix.cols() != cols) {
-            cerr << "Error: Input matrix has incorrect dimensions!" << endl;
-            return -1;
-        }
-
-        // 前向传播
-        VectorXd output = forward(featureMatrix);
-
-        // 找出最大值的索引
-        int max_index = 0;
-        double max_value = output(0);
-
-        for (int i = 1; i < output.size(); ++i) {
-            if (output(i) > max_value) {
-                max_value = output(i);
-                max_index = i;
-            }
-        }
-
-        return max_index;
-    }
+    int predict(const MatrixXd& featureMatrix);
 
     // 保存模型
-    void saveModel(const string& filename) {
-        ofstream file(filename);
-        if (file.is_open()) {
-            // 保存网络结构
-            file << rows << " " << cols << " " << hidden_size << " " << output_size << endl;
-
-            // 保存权重和偏置
-            for (int i = 0; i < hidden_size; ++i) {
-                for (int j = 0; j < rows * cols; ++j) {
-                    file << weights_input_hidden(i, j) << " ";
-                }
-                file << bias_hidden(i) << endl;
-            }
-
-            for (int i = 0; i < output_size; ++i) {
-                for (int j = 0; j < hidden_size; ++j) {
-                    file << weights_hidden_output(i, j) << " ";
-                }
-                file << bias_output(i) << endl;
-            }
-
-            file.close();
-            cout << "Model saved to " << filename << endl;
-        }
-        else {
-            cerr << "Unable to open file: " << filename << endl;
-        }
-    }
+    void saveModel(const string& filename);
 
     // 加载模型
-    void loadModel(const string& filename) {
-        ifstream file(filename);
-        if (file.is_open()) {
-            // 加载网络结构
-            file >> rows >> cols >> hidden_size >> output_size;
-
-            // 调整矩阵大小
-            weights_input_hidden.resize(hidden_size, rows * cols);
-            bias_hidden.resize(hidden_size);
-            weights_hidden_output.resize(output_size, hidden_size);
-            bias_output.resize(output_size);
-
-            // 加载权重和偏置
-            for (int i = 0; i < hidden_size; ++i) {
-                for (int j = 0; j < rows * cols; ++j) {
-                    file >> weights_input_hidden(i, j);
-                }
-                file >> bias_hidden(i);
-            }
-
-            for (int i = 0; i < output_size; ++i) {
-                for (int j = 0; j < hidden_size; ++j) {
-                    file >> weights_hidden_output(i, j);
-                }
-                file >> bias_output(i);
-            }
-
-            file.close();
-            cout << "Model loaded from " << filename << endl;
-        }
-        else {
-            cerr << "Unable to open file: " << filename << endl;
-        }
-    }
+    void loadModel(const string& filename);
 };
 
-void LoadData(const vector<Feature>& f, vector<MatrixXd>& features, vector<VectorXd>& labels, const int& label, int len, int max_size, int min_size, int avr_size) {
-    int size = static_cast<int>(f.size());
-    MatrixXd feature(len, 5);
-
-    // 计算特征最大值用于归一化
-    float max_val = 0.0f;
-    for (int i = 0; i < size; i++) {
-        max_val = max(max_val, static_cast<float>(f[i].GetSize()));
-    }
-    max_val = max(max_val, static_cast<float>(max_size));
-
-    for (int i = 0; i < size; i++) {
-        feature(i, 0) = static_cast<float>(f[i].GetSize()) / max_val; // 归一化
-        feature(i, 1) = f[i].GetDirection();
-        feature(i, 2) = static_cast<float>(max_size) / max_val; // 归一化
-        feature(i, 3) = static_cast<float>(min_size) / max_val; // 归一化
-        feature(i, 4) = static_cast<float>(avr_size) / max_val; // 归一化
-    }
-    for (int i = size; i < len; i++) {
-        feature(i, 0) = 0.0f;
-        feature(i, 1) = 0.0f;
-        feature(i, 2) = 0.0f;
-        feature(i, 3) = 0.0f;
-        feature(i, 4) = 0.0f;
-    }
-    features.push_back(feature);
-    VectorXd temp_label(10);
-    for (int i = 0; i < 10; i++) {
-        if (i + 1 == label) {
-            temp_label[i] = 1;
-        }
-        else {
-            temp_label[i] = 0;
-        }
-    }
-    labels.push_back(temp_label);
-}
+//处理数据至特征值矩阵
+void LoadData(const vector<Feature>& f, vector<MatrixXd>& features, vector<VectorXd>& labels, const int& label, int len, int max_size, int min_size, int avr_size);
 
 //通过文件夹名称返回对应标签
-int Label_Number(string label) {
-    if (label == "bd")  return 1;
-    if (label == "bz")  return 2;
-    if (label == "csdn")  return 3;
-    if (label == "gh")  return 4;
-    if (label == "iqy")  return 5;
-    if (label == "my")  return 6;
-    if (label == "qd")  return 7;
-    if (label == "tb")  return 8;
-    if (label == "wb")  return 9;
-    if (label == "zh")  return 10;
-    else return -1;
-}
+int Label_Number(string label);
 
-std::string Website_Name(int label) {
-    if (label == 1)  return "www.baidu.com";
-    if (label == 2)  return "www.bilibili.com";
-    if (label == 3)  return "www.csdn.com";
-    if (label == 4)  return "www.github.com";
-    if (label == 5)  return "www.iqiyi.com";
-    if (label == 6)  return "www.maoyan.com";
-    if (label == 7)  return "www.qidian.com";
-    if (label == 8)  return "www.taobao.com";
-    if (label == 9)  return "www.weibo.com";
-    if (label == 10)  return "www.zhihu.com";
-    else return "null";
-}
+string Website_Name(int label);
 
 enum Website_label {
     bd = 1, bz, csdn, gh, iqy, my, qd, tb, wb, zh
 };
 
-pair<vector<MatrixXd>,vector<VectorXd>> ReadTrain(path folderPath) {
-    vector<MatrixXd> features_matrix;
-    vector<VectorXd> labels;
-    int max_count = -1;
-    string name;
-    if (!exists(folderPath) || !is_directory(folderPath)) {
-        throw "Invalid Path!";
-    }
-    vector<path>dir_paths;
-    for (const auto& entry : directory_iterator(folderPath)) {
-        if (is_directory(entry)) {
-            dir_paths.push_back(entry.path());
-        }
-    }
-    for (const auto& p : dir_paths) {
-        for (const auto& entry : directory_iterator(p)) {
-            string Pcap_File = entry.path().string();
-            Pcap_Header* ph = new Pcap_Header;
-            Pcap_Packet_Header* pph = new Pcap_Packet_Header;
+pair<vector<MatrixXd>, pair<vector<VectorXd>, int>> ReadTrain(path folderPath);
 
-            ifstream pf;
-            pf.open(Pcap_File, ios::in | ios::binary);
-            if (!pf) {
-                throw "Open File Error!";
-            }
-            pf.read((char*)ph, sizeof(Pcap_Header));
-            int count = 0;
-            while (pf.read((char*)pph, sizeof(Pcap_Packet_Header))) {
-                char* buffer = (char*)malloc(pph->caplen);
-                pf.read((char*)buffer, pph->caplen);
-                count++;
-                free(buffer);
-            }
-            if (count > max_count) {
-                max_count = count;
-                name = Pcap_File;
-            }
-        }
-    }
-    for (const auto& p : dir_paths) {
-        for (const auto& entry : directory_iterator(p)) {
-            string Pcap_File = entry.path().string();
-            Pcap_Header* ph = new Pcap_Header;
-            Pcap_Packet_Header* pph = new Pcap_Packet_Header;
-            TC_Protocol* tc_ptc;
-
-            ifstream pf;
-            pf.open(Pcap_File, ios::in | ios::binary);
-            if (!pf) {
-                throw "Open File Error!";
-            }
-            pf.read((char*)ph, sizeof(Pcap_Header));
-            vector<Feature>features;
-            int count = 0;
-            int max_len = 0;
-            int min_len = INT_MAX;
-            while (pf.read((char*)pph, sizeof(Pcap_Packet_Header))) {
-                char* buffer = (char*)malloc(pph->caplen);
-                pf.read((char*)buffer, pph->caplen);
-                tc_ptc = (TC_Protocol*)(buffer + sizeof(Ethernet2) + sizeof(Protocol));
-                features.push_back(Feature(pph->caplen, (short)ntohs(tc_ptc->destination_port)));
-                free(buffer);
-                count += pph->caplen;
-                //cout << "pph len: " << pph->caplen << endl;
-                if (pph->caplen > max_len) {
-                    max_len = pph->caplen;
-                }
-                if (pph->caplen < min_len) {
-                    min_len = pph->caplen;
-                }
-            }
-            //cout << "Max len:" << max_len << endl;
-            LoadData(features, features_matrix, labels, Label_Number(p.filename().string()), max_count, max_len, min_len, count / features.size());
-            //cout << features_matrix[features_matrix.size() - 1] << endl;
-        }
-    }
-    return make_pair(features_matrix, labels);
-}
-
-double MainPredict(path folderPath, CNN& cnn) {
-    vector<MatrixXd> test_features_matrix;
-    vector<VectorXd> labels;
-    int max_count = -1;
-    string name;
-     if (!exists(folderPath) || !is_directory(folderPath)) {
-         throw "Folder doesn't exist!";
-     }
-     vector<path>dir_paths;
-     for (const auto& entry : directory_iterator(folderPath)) {
-         if (is_directory(entry)) {
-             dir_paths.push_back(entry.path());
-         }
-     }
-     for (const auto& p : dir_paths) {
-         for (const auto& entry : directory_iterator(p)) {
-             string Pcap_File = entry.path().string();
-             Pcap_Header* ph = new Pcap_Header;
-             Pcap_Packet_Header* pph = new Pcap_Packet_Header;
-
-             ifstream pf;
-             pf.open(Pcap_File, ios::in | ios::binary);
-             if (!pf) {
-                 cout << "Open File Error!" << endl;
-                 return -1;
-             }
-             pf.read((char*)ph, sizeof(Pcap_Header));
-             int count = 0;
-             while (pf.read((char*)pph, sizeof(Pcap_Packet_Header))) {
-                 char* buffer = (char*)malloc(pph->caplen);
-                 pf.read((char*)buffer, pph->caplen);
-                 count++;
-                 free(buffer);
-             }
-             if (count > max_count) {
-                 max_count = count;
-                 name = Pcap_File;
-             }
-         }
-     }
-     int correct = 0;
-     int wrong = 0;
-     for (const auto& p : dir_paths) {
-         for (const auto& entry : directory_iterator(p)) {
-             string Pcap_File = entry.path().string();
-             Pcap_Header* ph = new Pcap_Header;
-             Pcap_Packet_Header* pph = new Pcap_Packet_Header;
-             TC_Protocol* tc_ptc;
-
-             ifstream pf;
-             pf.open(Pcap_File, ios::in | ios::binary);
-             if (!pf) {
-                 cout << "Open File Error!" << endl;
-                 return -1;
-             }
-             pf.read((char*)ph, sizeof(Pcap_Header));
-             vector<Feature>features;
-             int count = 0;
-             int max_len = 0;
-             int min_len = INT_MAX;
-             while (pf.read((char*)pph, sizeof(Pcap_Packet_Header))) {
-                 char* buffer = (char*)malloc(pph->caplen);
-                 pf.read((char*)buffer, pph->caplen);
-                 tc_ptc = (TC_Protocol*)(buffer + sizeof(Ethernet2) + sizeof(Protocol));
-                 features.push_back(Feature(pph->caplen, (short)ntohs(tc_ptc->destination_port)));
-                 free(buffer);
-                 count += pph->caplen;
-                 //cout << "pph len: " << pph->caplen << endl;
-                 if (pph->caplen > max_len) {
-                     max_len = pph->caplen;
-                 }
-                 if (pph->caplen < min_len) {
-                     min_len = pph->caplen;
-                 }
-             }
-             //cout << "Max len:" << max_len << endl;
-             LoadData(features, test_features_matrix, labels, Label_Number(p.filename().string()), max_count, max_len, min_len, count / features.size());
-             //cout << features_matrix[features_matrix.size() - 1] << endl;
-             int predicted_class = cnn.predict(test_features_matrix[test_features_matrix.size() - 1]) + 1;
-             cout << predicted_class << endl;
-             if (predicted_class == Label_Number(p.filename().string())) {
-                 correct++;
-             }
-             else {
-                 wrong++;
-             }
-         }
-     }
-     return 0.1 * correct / (correct + wrong) * 100;
-}
+double MainPredict(path folderPath, CNN& cnn, int max_count);
