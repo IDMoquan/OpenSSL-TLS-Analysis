@@ -8,7 +8,8 @@ using namespace filesystem;
 
 
 int main(){
-    auto train_data = ReadTrain("Data\\train");     //获取训练数据特征矩阵、标签向量、权重矩阵大小
+    //获取训练数据特征矩阵、标签向量、权重矩阵大小
+    auto train_data = ReadTrain("Data\\train");
     
     // 获取特征矩阵大小
     int matrix_rows = train_data.first[0].rows();
@@ -21,10 +22,10 @@ int main(){
     CNN cnn(matrix_rows, matrix_cols, 32, output_dim, 0.05);
 
     // 训练模型(训练数据、标签、训练轮次)
-     cnn.train(train_data.first , train_data.second.first, 100);
+    //cnn.train(train_data.first , train_data.second.first, 1000);
 
     // 保存模型
-     cnn.saveModel("100 epoches.pt");
+    //cnn.saveModel("1000 epoches.pt");
 
     // 加载模型
      cnn.loadModel("100 epoches.pt");
@@ -33,7 +34,13 @@ int main(){
      double res = MainPredict("Data\\test", cnn, train_data.second.second);
 
      //输出预测正确率
-     cout << "Accuracy:" << fixed << setprecision(2) << res << "%" << endl;
+     if (res >= 90) {
+         cout << GREEN;
+     }
+     else {
+         cout << RED;
+     }
+     cout << endl << "Accuracy:" << fixed << setprecision(2) << res << "%" << endl << WHITE;
 
     return 0;
 }

@@ -1,8 +1,8 @@
 ﻿#pragma once
 #include "Head.h"
 
-Feature::Feature(unsigned int& s, const short& port) {
-    size = s;
+//Feature类构造函数
+Feature::Feature(unsigned int& s, const short& port) : size(s) {
     //通过端口判断传输方向
     if (port == 443) {
         direction_send = 1;
@@ -12,64 +12,70 @@ Feature::Feature(unsigned int& s, const short& port) {
     }
 }
 
+//获取大小
 unsigned int Feature::GetSize() const {
     return size;
 }
 
+//获取方向
 bool Feature::GetDirection() const {
     return direction_send;
 }
 
-// 激活函数
+//激活函数1
 double sigmoid(double x) {
     return 1.0 / (1.0 + exp(-x));
 }
 
+//激活函数2
 double sigmoid_derivative(double x) {
     double sig = sigmoid(x);
     return sig * (1 - sig);
 }
 
+//CNN类构造函数
 CNN::CNN(int matrix_rows, int matrix_cols, int hidden_dim, int output_dim, double lr, bool reproducible)
     : rows(matrix_rows), cols(matrix_cols), hidden_size(hidden_dim), output_size(output_dim), learning_rate(lr) {
 
-    // 初始化随机数生成器
+    //初始化随机数生成器
     mt19937 gen;
 
+    //固定种子，确保实验可重复
     if (reproducible) {
-        // 固定种子，确保实验可重复
         unsigned int seed = 42;
         gen = mt19937(seed);
     }
+    //不可预测的随机数生成
     else {
-        // 不可预测的随机数生成
-        random_device rd;
+        //种子生成
+        random_device rd;           
         vector<unsigned int> seeds(mt19937::state_size);
         generate_n(seeds.data(), seeds.size(), ref(rd));
         seed_seq seed_seq(seeds.begin(), seeds.end());
+        //生成随机数
         gen = mt19937(seed_seq);
     }
 
-    // 使用Xavier初始化
-    double fan_in = rows * cols;
-    double fan_out = hidden_size;
-    double stddev = sqrt(2.0 / (fan_in + fan_out));
-    normal_distribution<> dist(0.0, stddev);
+    //使用Xavier初始化
+    double fan_in = rows * cols;                        //输入神经元数量
+    double fan_out = hidden_size;                       //输出神经元大小
+    double stddev = sqrt(2.0 / (fan_in + fan_out));     //计算标准差
+    normal_distribution<> dist(0.0, stddev);            //定义正态分布
 
-    // 输入到隐藏层的权重: hidden_size x (rows * cols)
+    //输入到隐藏层的权重: hidden_size x (rows * cols)
     weights_input_hidden = MatrixXd::Zero(hidden_size, rows * cols);
     bias_hidden = VectorXd::Zero(hidden_size);
 
-    // 隐藏层到输出层的权重: output_size x hidden_size
+    //隐藏层到输出层的权重: output_size x hidden_size
     weights_hidden_output = MatrixXd::Zero(output_size, hidden_size);
     bias_output = VectorXd::Zero(output_size);
 
-    // 随机初始化权重
+    //随机初始化权重
     for (int i = 0; i < hidden_size; ++i) {
         for (int j = 0; j < rows * cols; ++j) {
-            weights_input_hidden(i, j) = dist(gen);
+            weights_input_hidden(i, j) = dist(gen);     //输入-隐藏层权重从正态分布中采样
         }
-        bias_hidden(i) = dist(gen);
+        bias_hidden(i) = dist(gen);                     //偏置相同操作
     }
 
     // 隐藏层到输出层的权重使用相同的初始化方法
@@ -448,8 +454,10 @@ double MainPredict(path folderPath, CNN& cnn, int max_count) {
     }
     int correct = 0;
     int wrong = 0;
+    int number = 0;
     for (const auto& p : dir_paths) {
         for (const auto& entry : directory_iterator(p)) {
+            number++;
             string Pcap_File = entry.path().string();
             Pcap_Header* ph = new Pcap_Header;
             Pcap_Packet_Header* pph = new Pcap_Packet_Header;
@@ -485,13 +493,18 @@ double MainPredict(path folderPath, CNN& cnn, int max_count) {
             LoadData(features, test_features_matrix, labels, Label_Number(p.filename().string()), max_count, max_len, min_len, count / features.size());
             //cout << features_matrix[features_matrix.size() - 1] << endl;
             int predicted_class = cnn.predict(test_features_matrix[test_features_matrix.size() - 1]) + 1;
-            cout << predicted_class << endl;
+            cout << WHITE << "Sample " << setw(3) << std::left << number << setw(3) << ":" << WHITE;
+            cout << "Predicted: " << YELLOW << setw(20) << std::left << Website_Name(predicted_class) << WHITE;
+            cout << "Actual: " << CYAN<< setw(20) << std::left << Website_Name(Label_Number(p.filename().string()));
             if (predicted_class == Label_Number(p.filename().string())) {
                 correct++;
+                cout << GREEN << setw(10) <<"[Correct]";
             }
             else {
                 wrong++;
+                cout << RED << setw(10) << "[Wrong]";
             }
+            cout << endl;
         }
     }
     return 1.0 * correct / (correct + wrong) * 100;
