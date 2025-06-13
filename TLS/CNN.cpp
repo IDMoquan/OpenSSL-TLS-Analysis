@@ -273,11 +273,11 @@ void LoadData(const vector<Feature>& f, vector<MatrixXd>& features, vector<Vecto
     max_val = max(max_val, static_cast<float>(max_size));
 
     for (int i = 0; i < size; i++) {
-        feature(i, 0) = static_cast<float>(f[i].GetSize()) / max_val; // 归一化
+        feature(i, 0) = static_cast<float>(f[i].GetSize()) / max_val;    // 归一化
         feature(i, 1) = f[i].GetDirection();
-        feature(i, 2) = static_cast<float>(max_size) / max_val; // 归一化
-        feature(i, 3) = static_cast<float>(min_size) / max_val; // 归一化
-        feature(i, 4) = static_cast<float>(avr_size) / max_val; // 归一化
+        feature(i, 2) = static_cast<float>(max_size) / max_val;         // 归一化
+        feature(i, 3) = static_cast<float>(min_size) / max_val;         // 归一化
+        feature(i, 4) = static_cast<float>(avr_size) / max_val;          // 归一化
     }
     for (int i = size; i < len; i++) {
         feature(i, 0) = 0.0f;

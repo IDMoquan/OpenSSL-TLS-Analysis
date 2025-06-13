@@ -18,6 +18,8 @@ using namespace filesystem;
 
 // 网络字节序结构体定义
 #pragma pack(push, 1)
+
+//Pcap文件头
 struct Pcap_Header {
     unsigned int magic;              //0xA1 B2 C3 D4:用来标示文件的开始
     unsigned short major;          //0×02 00:当前文件主要的版本号
@@ -28,66 +30,74 @@ struct Pcap_Header {
     unsigned int linktype;          //链路类型*
 };
 
+//Pcap包头
 struct Pcap_Packet_Header {
     unsigned int timestamp_sec;         //时间戳高位(second)
     unsigned int timestamp_msec;      //时间戳低位(microsecond)
-    unsigned int caplen;
-    unsigned int len;
+    unsigned int caplen;                      //数据帧长度
+    unsigned int len;                           //离线数据长度
 };
 
+//6字节数据
 struct Byte6 {
-    char v1, v2, v3, v4, v5, v6;
+    char v1, v2, v3, v4, v5, v6;        
 };
 
+//IP地址
 struct Address {
-    char a1, a2, a3, a4;
+    char a1, a2, a3, a4;                  
 };
 
+//Pcap包Ethernet部分
 struct Ethernet2 {
-    Byte6 destination;
-    Byte6 source;
-    short type;
+    Byte6 destination;                  //目标MAC地址
+    Byte6 source;                          //源MAC地址
+    short type;                              //上一层协议
 };
 
+//Pcap包Protocol部分
 struct Protocol {
-    char version;
-    char diff_svcs_field;
-    short tot_len;
-    short identification;
-    short flags;
-    char time_to_live;
-    char protocol;
-    short header_checksum;
-    Address source_address;
-    Address destination_address;
+    char version;                           //版本、首部长度
+    char diff_svcs_field;                 //区分服务
+    short tot_len;                          //首部长度
+    short identification;                //标识
+    short flags;                              //标志、片偏移
+    char time_to_live;                    //生存时间
+    char protocol;                          //协议
+    short header_checksum;          //首部校验和
+    Address source_address;         //源IP地址
+    Address destination_address;  //目标IP地址
 };
 
+//Pcap包TC_Protol部分
 struct TC_Protocol {
-    short source_port;
-    short destination_port;
-    int sequence_number;
-    int acknowledge_number;
-    short flags;
-    short window;
-    short checksum;
-    short urgent_pointer;
+    short source_port;                  //源端口
+    short destination_port;           //目标端口
+    int sequence_number;            //序号
+    int acknowledge_number;      //确认号
+    short flags;                              //偏移字段、保留字段、紧急比特URG、确认比特ACK、推送比特PSH、复位比特RST、同步比特SYN、终止比特FIN
+    short window;                         //窗口字段
+    short checksum;                      //首部校验和
+    short urgent_pointer;              //紧急指针字段
 };
 #pragma pack(pop)
 
+//方向
 struct Direction {
-    Address source;
-    Address destination;
+    Address source;                     //源IP
+    Address destination;              //目标IP
 };
 
+//特征
 class Feature {
 private:
-    unsigned int size;
-    bool direction_send;
+    unsigned int size;              //大小
+    bool direction_send;         //方向
 public:
-    Feature(unsigned int& s, const short& port);
-
-    unsigned int GetSize() const;
-    bool GetDirection() const;
+    Feature(unsigned int& s, const short& port);    //构造函数
+        
+    unsigned int GetSize() const;           //获取大小
+    bool GetDirection() const;               //获取方向
 };
 
 //激活函数
