@@ -78,7 +78,7 @@ CNN::CNN(int matrix_rows, int matrix_cols, int hidden_dim, int output_dim, doubl
         bias_hidden(i) = dist(gen);                     //偏置相同操作
     }
 
-    // 隐藏层到输出层的权重使用相同的初始化方法
+    //同上操作
     fan_in = hidden_size;
     fan_out = output_size;
     stddev = sqrt(2.0 / (fan_in + fan_out));
@@ -92,49 +92,58 @@ CNN::CNN(int matrix_rows, int matrix_cols, int hidden_dim, int output_dim, doubl
     }
 }
 
-// 前向传播
+//前向传播
 VectorXd CNN::forward(const MatrixXd& input) {
-    // 将矩阵转换为向量（但在计算中保持矩阵结构）
-    VectorXd input_vec = Map<const VectorXd>(input.data(), rows * cols);
+    VectorXd input_vec = Map<const VectorXd>(input.data(), rows * cols);    //将矩阵转换为向量
+    VectorXd hidden = weights_input_hidden * input_vec + bias_hidden;       //输入层到隐藏层
 
-    // 输入层到隐藏层
-    VectorXd hidden = weights_input_hidden * input_vec + bias_hidden;
+	//应用激活函数
     for (int i = 0; i < hidden.size(); ++i) {
         hidden(i) = sigmoid(hidden(i));
     }
 
-    // 隐藏层到输出层
-    VectorXd output = weights_hidden_output * hidden + bias_output;
+    VectorXd output = weights_hidden_output * hidden + bias_output;         //隐藏层到输出层
+
+	//应用激活函数
     for (int i = 0; i < output.size(); ++i) {
         output(i) = sigmoid(output(i));
     }
 
-    return output;
+	return output;      //返回输出向量
 }
 
 //反向传播
 void CNN::backward(const MatrixXd& input, const VectorXd& target) {
-    // 将矩阵转换为向量（但在计算中保持矩阵结构）
-    VectorXd input_vec = Map<const VectorXd>(input.data(), rows * cols);
+    VectorXd input_vec = Map<const VectorXd>(input.data(), rows * cols);                    //将矩阵转换为向量
 
-    // 前向传播(保存中间结果用于反向传播)
+	//前向传播计算隐藏层和输出层
     VectorXd hidden_input = weights_input_hidden * input_vec + bias_hidden;
-    VectorXd hidden_output = hidden_input.unaryExpr([](double x) { return sigmoid(x); });
+    VectorXd hidden_output = hidden_input.unaryExpr([](double x) { 
+         return sigmoid(x); 
+    });
 
     VectorXd final_input = weights_hidden_output * hidden_output + bias_output;
-    VectorXd final_output = final_input.unaryExpr([](double x) { return sigmoid(x); });
+    VectorXd final_output = final_input.unaryExpr([](double x) {
+        return sigmoid(x); 
+    });
 
-    // 计算输出层误差
+    //计算输出层误差
     VectorXd output_error = final_output - target;
     VectorXd output_delta = output_error.cwiseProduct(
-        final_input.unaryExpr([](double x) { return sigmoid_derivative(x); }));
+        final_input.unaryExpr([](double x) { 
+            return sigmoid_derivative(x); 
+        })
+    );
 
-    // 计算隐藏层误差
+    //计算隐藏层误差
     VectorXd hidden_error = weights_hidden_output.transpose() * output_delta;
     VectorXd hidden_delta = hidden_error.cwiseProduct(
-        hidden_input.unaryExpr([](double x) { return sigmoid_derivative(x); }));
+        hidden_input.unaryExpr([](double x) { 
+            return sigmoid_derivative(x); 
+        }
+    ));
 
-    // 更新权重和偏置
+    //更新权重和偏置
     weights_hidden_output -= learning_rate * output_delta * hidden_output.transpose();
     bias_output -= learning_rate * output_delta;
 
@@ -142,43 +151,43 @@ void CNN::backward(const MatrixXd& input, const VectorXd& target) {
     bias_hidden -= learning_rate * hidden_delta;
 }
 
-// 训练模型
+//训练模型
 void CNN::train(const vector<MatrixXd>& featureMatrices, const vector<VectorXd>& labels, int epochs) {
-    int num_samples = featureMatrices.size();
+	int num_samples = featureMatrices.size();               //初始化样本数量
 
-    for (int epoch = 0; epoch < epochs; ++epoch) {
-        double total_loss = 0.0;
+	//训练epochs轮
+    for (int epoch = 0; epoch < epochs; epoch++) {
+		double total_loss = 0.0;                            //初始化总损失
 
+		//遍历每个样本
         for (int i = 0; i < num_samples; ++i) {
-            // 确保矩阵大小正确
+            //确保矩阵大小正确
             if (featureMatrices[i].rows() != rows || featureMatrices[i].cols() != cols) {
                 cerr << "Error: Matrix " << i << " has incorrect dimensions!" << endl;
                 continue;
             }
 
-            // 前向传播
+            //前向传播
             VectorXd prediction = forward(featureMatrices[i]);
 
-            // 计算损失
+            //计算损失
             VectorXd error = prediction - labels[i];
             double loss = error.squaredNorm() / 2.0;
             total_loss += loss;
 
-            // 反向传播
+            //反向传播
             backward(featureMatrices[i], labels[i]);
         }
 
-        // 打印平均损失
+        //输出平均损失
         double avg_loss = total_loss / num_samples;
-        cout << "Epoch " << epoch + 1 << "/" << epochs
-            << ", Average Loss: " << avg_loss << endl;
+        cout << "Epoch " << epoch + 1 << "/" << epochs << ", Average Loss: " << avg_loss << endl;
     }
 }
 
 // 预测
 int CNN::predict(const MatrixXd& featureMatrix) {
     // 确保矩阵大小正确
-    //cout << featureMatrix.rows() << " " << featureMatrix.cols() << endl;
     if (featureMatrix.rows() != rows || featureMatrix.cols() != cols) {
         cerr << "Error: Input matrix has incorrect dimensions!" << endl;
         return -1;
@@ -307,97 +316,117 @@ void LoadData(const vector<Feature>& f, vector<MatrixXd>& features, vector<Vecto
 
 //通过文件夹名称返回对应标签
 int Label_Number(string label) {
-    if (label == "bd")  return 1;
-    if (label == "bz")  return 2;
-    if (label == "csdn")  return 3;
-    if (label == "gh")  return 4;
-    if (label == "iqy")  return 5;
-    if (label == "my")  return 6;
-    if (label == "qd")  return 7;
-    if (label == "tb")  return 8;
-    if (label == "wb")  return 9;
-    if (label == "zh")  return 10;
+    if (label == "bd")  return 1;       //百度
+    if (label == "bz")  return 2;       //B站
+    if (label == "csdn")  return 3;     //Csdn
+    if (label == "gh")  return 4;       //Github
+    if (label == "iqy")  return 5;      //爱奇艺
+    if (label == "my")  return 6;       //猫眼
+    if (label == "qd")  return 7;       //起点
+    if (label == "tb")  return 8;       //淘宝
+    if (label == "wb")  return 9;       //微博
+    if (label == "zh")  return 10;      //知乎
     else return -1;
 }
 
 string Website_Name(int label) {
-    if (label == 1)  return "www.baidu.com";
-    if (label == 2)  return "www.bilibili.com";
-    if (label == 3)  return "www.csdn.com";
-    if (label == 4)  return "www.github.com";
-    if (label == 5)  return "www.iqiyi.com";
-    if (label == 6)  return "www.maoyan.com";
-    if (label == 7)  return "www.qidian.com";
-    if (label == 8)  return "www.taobao.com";
-    if (label == 9)  return "www.weibo.com";
-    if (label == 10)  return "www.zhihu.com";
+    if (label == 1)  return "www.baidu.com";        //百度
+    if (label == 2)  return "www.bilibili.com";     //B站
+    if (label == 3)  return "www.csdn.com";         //Csdn
+    if (label == 4)  return "www.github.com";       //Github
+    if (label == 5)  return "www.iqiyi.com";        //爱奇艺
+    if (label == 6)  return "www.maoyan.com";       //猫眼
+    if (label == 7)  return "www.qidian.com";       //起点
+    if (label == 8)  return "www.taobao.com";       //淘宝
+    if (label == 9)  return "www.weibo.com";        //微博
+    if (label == 10)  return "www.zhihu.com";       //知乎
     else return "null";
 }
 
+//读取训练数据主函数
 pair<vector<MatrixXd>, pair<vector<VectorXd>, int>> ReadTrain(path folderPath) {
-    vector<MatrixXd> features_matrix;
-    vector<VectorXd> labels;
-    int max_count = -1;
-    string name;
+    //初始化变量
+    vector<MatrixXd> features_matrix;                           //特征值矩阵动态数组
+    vector<VectorXd> labels;                                    //标签记录数组
+    vector<path>dir_paths;                                      //待搜索文件夹路径
+    int max_count = -1;                                         //包数量最大值
+    string name;                                                //数量最大的包名称
+
+    //检查路径是否存在
     if (!exists(folderPath) || !is_directory(folderPath)) {
         throw "Invalid Path!";
     }
-    vector<path>dir_paths;
+
+    //遍历第一级目录将文件夹放入待搜索数组
     for (const auto& entry : directory_iterator(folderPath)) {
+        //判断是文件夹
         if (is_directory(entry)) {
             dir_paths.push_back(entry.path());
         }
     }
+    
+    //按文件夹搜索pcap文件以获取最大包数量
     for (const auto& p : dir_paths) {
         for (const auto& entry : directory_iterator(p)) {
-            string Pcap_File = entry.path().string();
-            Pcap_Header* ph = new Pcap_Header;
-            Pcap_Packet_Header* pph = new Pcap_Packet_Header;
+            //初始化变量
+            string Pcap_File = entry.path().string();                   //文件名
+            Pcap_Header* ph = new Pcap_Header;                          //Pcap头指针
+            Pcap_Packet_Header* pph = new Pcap_Packet_Header;           //Pcap包头指针
+            ifstream pf;                                                //文件
+            int count = 0;                                              //
 
-            ifstream pf;
-            pf.open(Pcap_File, ios::in | ios::binary);
+            pf.open(Pcap_File, ios::in | ios::binary);                  //以二进制方式读取Pcap文件
+            //判断是否成功读取
             if (!pf) {
                 throw "Open File Error!";
             }
-            pf.read((char*)ph, sizeof(Pcap_Header));
-            int count = 0;
+            pf.read((char*)ph, sizeof(Pcap_Header));                    //从文件中读取指定大小区域的数据为Pcap头
+			//读取包头
             while (pf.read((char*)pph, sizeof(Pcap_Packet_Header))) {
-                char* buffer = (char*)malloc(pph->caplen);
-                pf.read((char*)buffer, pph->caplen);
-                count++;
-                free(buffer);
+				char* buffer = (char*)malloc(pph->caplen);              //开辟内存空间
+				pf.read((char*)buffer, pph->caplen);                    //读取包大小
+				count++;                                                //更新包数量
+				free(buffer);                                           //释放内存空间
             }
+			//判断包数量是否大于最大值
             if (count > max_count) {
+                //更新最大包信息
                 max_count = count;
                 name = Pcap_File;
             }
         }
     }
+    //按文件夹搜索pcap文件
     for (const auto& p : dir_paths) {
         for (const auto& entry : directory_iterator(p)) {
-            string Pcap_File = entry.path().string();
-            Pcap_Header* ph = new Pcap_Header;
-            Pcap_Packet_Header* pph = new Pcap_Packet_Header;
-            TC_Protocol* tc_ptc;
+			//初始化变量
+            vector<Feature>features;                            //特征值矩阵
+			string Pcap_File = entry.path().string();           //Pcap文件名
+			Pcap_Header* ph = new Pcap_Header;                  //Pcap头指针
+			Pcap_Packet_Header* pph = new Pcap_Packet_Header;   //Pcap包头指针
+			TC_Protocol* tc_ptc;                                //TC_Protocol指针
+            ifstream pf;                                        //文件
+            long long count = 0;                                //字段长度总和
+			int max_len = 0;                                    //最大字段长度
+			int min_len = INT_MAX;						        //最小字段长度  
 
-            ifstream pf;
+			//打开文件
             pf.open(Pcap_File, ios::in | ios::binary);
+			//判断是否成功打开
             if (!pf) {
                 throw "Open File Error!";
             }
+			//读取Pcap头
             pf.read((char*)ph, sizeof(Pcap_Header));
-            vector<Feature>features;
-            int count = 0;
-            int max_len = 0;
-            int min_len = INT_MAX;
+			//读取包头
             while (pf.read((char*)pph, sizeof(Pcap_Packet_Header))) {
-                char* buffer = (char*)malloc(pph->caplen);
-                pf.read((char*)buffer, pph->caplen);
-                tc_ptc = (TC_Protocol*)(buffer + sizeof(Ethernet2) + sizeof(Protocol));
-                features.push_back(Feature(pph->caplen, (short)ntohs(tc_ptc->destination_port)));
-                free(buffer);
-                count += pph->caplen;
-                //cout << "pph len: " << pph->caplen << endl;
+				char* buffer = (char*)malloc(pph->caplen);                                              //开辟内存空间
+				pf.read((char*)buffer, pph->caplen);                                                    //读取包大小 
+				tc_ptc = (TC_Protocol*)(buffer + sizeof(Ethernet2) + sizeof(Protocol));                 //获取TC_Protocol指针
+				features.push_back(Feature(pph->caplen, (short)ntohs(tc_ptc->destination_port)));       //将特征值添加到特征矩阵
+				free(buffer);				                                                            //释放内存空间  
+				count += pph->caplen;                                                                   //更新字段长度总和
+				//更新最大最小字段长度
                 if (pph->caplen > max_len) {
                     max_len = pph->caplen;
                 }
@@ -405,83 +434,65 @@ pair<vector<MatrixXd>, pair<vector<VectorXd>, int>> ReadTrain(path folderPath) {
                     min_len = pph->caplen;
                 }
             }
-            //cout << "Max len:" << max_len << endl;
+			//加载数据
             LoadData(features, features_matrix, labels, Label_Number(p.filename().string()), max_count, max_len, min_len, count / features.size());
-            //cout << features_matrix[features_matrix.size() - 1] << endl;
         }
     }
-    return make_pair(features_matrix, make_pair(labels, max_count));
+	return make_pair(features_matrix, make_pair(labels, max_count));        //返回特征矩阵和标签矩阵以及最大包数量
 }
 
+//主预测函数
 double MainPredict(path folderPath, CNN& cnn, int max_count) {
-    vector<MatrixXd> test_features_matrix;
-    vector<VectorXd> labels;
-    string name;
+	//初始化变量
+	vector<MatrixXd> test_features_matrix;                      //测试数据特征值矩阵动态数组
+	vector<VectorXd> labels;                                    //标签记录数组    
+	vector<path>dir_paths;  			                        //待搜索文件夹路径数组               
+	int correct = 0;                                            //正确预测数量    
+	int wrong = 0;                                              //错误预测数量
+	int number = 0;                                             //包数量
+
+	//检查路径是否存在
     if (!exists(folderPath) || !is_directory(folderPath)) {
         throw "Folder doesn't exist!";
     }
-    vector<path>dir_paths;
+	//遍历第一级目录将文件夹放入待搜索数组
     for (const auto& entry : directory_iterator(folderPath)) {
         if (is_directory(entry)) {
             dir_paths.push_back(entry.path());
         }
     }
+	//按文件夹搜索pcap文件
     for (const auto& p : dir_paths) {
         for (const auto& entry : directory_iterator(p)) {
-            string Pcap_File = entry.path().string();
-            Pcap_Header* ph = new Pcap_Header;
-            Pcap_Packet_Header* pph = new Pcap_Packet_Header;
+			//初始化变量
+			vector<Feature>features;                                    //特征值矩阵
+			string Pcap_File = entry.path().string();                   //获取Pcap文件名
+			Pcap_Header* ph = new Pcap_Header;                          //Pcap头指针
+			Pcap_Packet_Header* pph = new Pcap_Packet_Header;           //Pcap包头指针
+			TC_Protocol* tc_ptc;                                        //TC_Protocol指针
+			int count = 0;                                              //字段长度总和
+			int max_len = 0;									        //最大字段长度        
+			int min_len = INT_MAX;                                      //最小字段长度
+			ifstream pf;                                                //文件
+			number++;                                                   //更新Pcap文件数量
 
-            ifstream pf;
-            pf.open(Pcap_File, ios::in | ios::binary);
+			//打开文件
+			pf.open(Pcap_File, ios::in | ios::binary);                  //以二进制方式读取Pcap文件
+			//判断是否成功打开
             if (!pf) {
                 cout << "Open File Error!" << endl;
                 return -1;
             }
-            pf.read((char*)ph, sizeof(Pcap_Header));
-            int count = 0;
+			pf.read((char*)ph, sizeof(Pcap_Header));                    //读取包头
+			//读取Pcap包头
             while (pf.read((char*)pph, sizeof(Pcap_Packet_Header))) {
-                char* buffer = (char*)malloc(pph->caplen);
-                pf.read((char*)buffer, pph->caplen);
-                count++;
-                free(buffer);
-            }
-            if (count > max_count) {
-                max_count = count;
-                name = Pcap_File;
-            }
-        }
-    }
-    int correct = 0;
-    int wrong = 0;
-    int number = 0;
-    for (const auto& p : dir_paths) {
-        for (const auto& entry : directory_iterator(p)) {
-            number++;
-            string Pcap_File = entry.path().string();
-            Pcap_Header* ph = new Pcap_Header;
-            Pcap_Packet_Header* pph = new Pcap_Packet_Header;
-            TC_Protocol* tc_ptc;
-
-            ifstream pf;
-            pf.open(Pcap_File, ios::in | ios::binary);
-            if (!pf) {
-                cout << "Open File Error!" << endl;
-                return -1;
-            }
-            pf.read((char*)ph, sizeof(Pcap_Header));
-            vector<Feature>features;
-            int count = 0;
-            int max_len = 0;
-            int min_len = INT_MAX;
-            while (pf.read((char*)pph, sizeof(Pcap_Packet_Header))) {
-                char* buffer = (char*)malloc(pph->caplen);
-                pf.read((char*)buffer, pph->caplen);
-                tc_ptc = (TC_Protocol*)(buffer + sizeof(Ethernet2) + sizeof(Protocol));
-                features.push_back(Feature(pph->caplen, (short)ntohs(tc_ptc->destination_port)));
-                free(buffer);
-                count += pph->caplen;
-                //cout << "pph len: " << pph->caplen << endl;
+				char* buffer = (char*)malloc(pph->caplen);                                          //开辟内存空间
+				pf.read((char*)buffer, pph->caplen);                                                //读取包字段长度                         
+				tc_ptc = (TC_Protocol*)(buffer + sizeof(Ethernet2) + sizeof(Protocol));             //获取TC_Protocol指针
+				features.push_back(Feature(pph->caplen, (short)ntohs(tc_ptc->destination_port)));   //将特征值添加到特征矩阵
+				free(buffer);                                                                       //释放内存空间  
+				count += pph->caplen;                                                               //更新字段长度总和
+				//更新最大最小字段长度
                 if (pph->caplen > max_len) {
                     max_len = pph->caplen;
                 }
@@ -489,10 +500,13 @@ double MainPredict(path folderPath, CNN& cnn, int max_count) {
                     min_len = pph->caplen;
                 }
             }
-            //cout << "Max len:" << max_len << endl;
+			//加载数据
             LoadData(features, test_features_matrix, labels, Label_Number(p.filename().string()), max_count, max_len, min_len, count / features.size());
-            //cout << features_matrix[features_matrix.size() - 1] << endl;
+			
+            //预测结果
             int predicted_class = cnn.predict(test_features_matrix[test_features_matrix.size() - 1]) + 1;
+
+			//输出结果
             cout << WHITE << "Sample " << setw(3) << std::left << number << setw(3) << ":" << WHITE;
             cout << "Predicted: " << YELLOW << setw(20) << std::left << Website_Name(predicted_class) << WHITE;
             cout << "Actual: " << CYAN<< setw(20) << std::left << Website_Name(Label_Number(p.filename().string()));
@@ -507,5 +521,6 @@ double MainPredict(path folderPath, CNN& cnn, int max_count) {
             cout << endl;
         }
     }
+	//返回预测准确率
     return 1.0 * correct / (correct + wrong) * 100;
 }
