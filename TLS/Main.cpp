@@ -1,39 +1,34 @@
-#pragma once
-#include <filesystem>
-#include "Head.h"
-#define MAX_ETH_FRAME 1514
+ï»¿#include "Head.h"
 using namespace std;
-using namespace Eigen;
-using namespace filesystem;
 
 
 int main(){
-    //»ñÈ¡ÑµÁ·Êı¾İÌØÕ÷¾ØÕó¡¢±êÇ©ÏòÁ¿¡¢È¨ÖØ¾ØÕó´óĞ¡
+    //è·å–è®­ç»ƒæ•°æ®ç‰¹å¾çŸ©é˜µã€æ ‡ç­¾å‘é‡ã€æƒé‡çŸ©é˜µå¤§å°
     auto train_data = ReadTrain("Data\\train");
     
-    // »ñÈ¡ÌØÕ÷¾ØÕó´óĞ¡
-    int matrix_rows = train_data.first[0].rows();
-    int matrix_cols = train_data.first[0].cols();
+    // è·å–ç‰¹å¾çŸ©é˜µå¤§å°
+	int matrix_rows = static_cast<int>(train_data.first[0].rows());
+    int matrix_cols = static_cast<int>(train_data.first[0].cols());
 
-    // ÉèÖÃÍøÕ¾Àà±ğ¸öÊı
+    // è®¾ç½®ç½‘ç«™ç±»åˆ«ä¸ªæ•°
     int output_dim = 10;
 
-    // ´´½¨CNN·ÖÀàÆ÷(È¨ÖØ¾ØÕó´óĞ¡¡¢Òş²Ø²ã´óĞ¡¡¢·ÖÀà¸öÊı¡¢Ñ§Ï°ÂÊ)
+    // åˆ›å»ºCNNåˆ†ç±»å™¨(æƒé‡çŸ©é˜µå¤§å°ã€éšè—å±‚å¤§å°ã€åˆ†ç±»ä¸ªæ•°ã€å­¦ä¹ ç‡)
     CNN cnn(matrix_rows, matrix_cols, 32, output_dim, 0.05);
 
-    // ÑµÁ·Ä£ĞÍ(ÑµÁ·Êı¾İ¡¢±êÇ©¡¢ÑµÁ·ÂÖ´Î)
-    //cnn.train(train_data.first , train_data.second.first, 1000);
+    // è®­ç»ƒæ¨¡å‹(è®­ç»ƒæ•°æ®ã€æ ‡ç­¾ã€è®­ç»ƒè½®æ¬¡)
+    cnn.train(train_data.first , train_data.second.first, 300);
 
-    // ±£´æÄ£ĞÍ
-    //cnn.saveModel("1000 epoches.pt");
+    // ä¿å­˜æ¨¡å‹
+    cnn.saveModel("300 epoches.pt");
 
-    // ¼ÓÔØÄ£ĞÍ
+    // åŠ è½½æ¨¡å‹
      cnn.loadModel("100 epoches.pt");
 
-    // Ô¤²âĞÂÊı¾İ(Êı¾İÂ·¾¶¡¢·ÖÀàÆ÷¡¢¾ØÕó´óĞ¡)
+    // é¢„æµ‹æ–°æ•°æ®(æ•°æ®è·¯å¾„ã€åˆ†ç±»å™¨ã€çŸ©é˜µå¤§å°)
      double res = MainPredict("Data\\test", cnn, train_data.second.second);
 
-     //Êä³öÔ¤²âÕıÈ·ÂÊ
+     //è¾“å‡ºé¢„æµ‹æ­£ç¡®ç‡
      if (res >= 90) {
          cout << GREEN;
      }
