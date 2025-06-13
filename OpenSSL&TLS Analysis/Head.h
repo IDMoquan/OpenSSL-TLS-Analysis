@@ -1,6 +1,10 @@
 ﻿#pragma once
 #include <string>
 #include <stringapiset.h>
+#include <winsock2.h>
+#include <iostream>
+#include <sstream>
+
 using namespace std;
 
 string GbkToUtf8(const char* src_str) {

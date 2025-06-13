@@ -17,13 +17,13 @@ int main(){
     CNN cnn(matrix_rows, matrix_cols, 32, output_dim, 0.05);
 
     // 训练模型(训练数据、标签、训练轮次)
-    cnn.train(train_data.first , train_data.second.first, 300);
+    //cnn.train(train_data.first , train_data.second.first, 300);
 
     // 保存模型
-    cnn.saveModel("300 epoches.pt");
+    //cnn.saveModel("300 epoches.pt");
 
     // 加载模型
-     cnn.loadModel("100 epoches.pt");
+     cnn.loadModel("300 epoches.pt");
 
     // 预测新数据(数据路径、分类器、矩阵大小)
      double res = MainPredict("Data\\test", cnn, train_data.second.second);
