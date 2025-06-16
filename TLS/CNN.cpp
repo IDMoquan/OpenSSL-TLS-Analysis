@@ -295,6 +295,10 @@ void CNN::loadModel(const string& filename) {
 	}
 }
 
+int CNN::GetRows() const {
+	return rows;
+}
+
 //获取大小
 unsigned int Feature::GetSize() const {
     return size;
@@ -389,7 +393,7 @@ string Website_Name(int label) {
 }
 
 //读取训练数据主函数
-pair<vector<MatrixXd>, pair<vector<VectorXd>, int>> ReadTrain(path folderPath) {
+pair<vector<MatrixXd>, vector<VectorXd>> ReadTrain(path folderPath) {
     //初始化变量
     vector<MatrixXd> features_matrix;					//特征值矩阵动态数组
 	vector<VectorXd> labels;									//标签记录数组
@@ -482,7 +486,7 @@ pair<vector<MatrixXd>, pair<vector<VectorXd>, int>> ReadTrain(path folderPath) {
 			LoadData(features, features_matrix, labels, Label_Number(p.filename().string()), max_count, max_len, min_len, static_cast<int>(count /features.size()));
         }
     }
-	return make_pair(features_matrix, make_pair(labels, max_count));												//返回特征矩阵和标签矩阵以及最大包数量
+	return make_pair(features_matrix, labels);												//返回特征矩阵和标签矩阵以及最大包数量
 }
 
 //主预测函数

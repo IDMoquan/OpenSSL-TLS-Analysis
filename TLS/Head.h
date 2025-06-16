@@ -137,6 +137,8 @@ public:
     void saveModel(const string& filename);
     //加载模型
     void loadModel(const string& filename);
+	//获取矩阵行数
+	int GetRows() const;
 };
 
 //处理数据至特征值矩阵
@@ -154,7 +156,7 @@ enum Website_label {
 };
 
 //读取训练数据主函数
-pair<vector<MatrixXd>, pair<vector<VectorXd>, int>> ReadTrain(path folderPath);
+pair<vector<MatrixXd>, vector<VectorXd>> ReadTrain(path folderPath);
 
 //测试函数
 double MainPredict(path folderPath, CNN& cnn, int max_count);
