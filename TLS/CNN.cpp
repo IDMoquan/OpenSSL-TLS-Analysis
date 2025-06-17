@@ -134,12 +134,19 @@ void CNN::backward(const MatrixXd& input, const VectorXd& target) {
 void CNN::train(const vector<MatrixXd>& featureMatrices, const vector<VectorXd>& labels, int epochs) {
 	int num_samples = static_cast<int>(featureMatrices.size());               //初始化样本数量
 	ofstream csvFile;
-	csvFile.open("Tain_Accuracy_300.csv", ios::out | ios::trunc);
+	stringstream csv_filename;																	//CSV文件名
+	csv_filename << "Train_Accuracy_" << epochs << ".csv";					//设置CSV文件名
+	csvFile.open(csv_filename.str(), ios::out | ios::trunc);
+	if (!csvFile.is_open()) {
+		cerr << "csvFile open failed!" << endl;
+	}
+	vector<long long>train_time;			//记录训练时间
 	//训练epochs轮
 	for (int epoch = 0; epoch < epochs; epoch++) {
-		double total_loss = 0.0;								//初始化总损失
-		int correct = 0;												//初始化正确预测数量
-		int wrong = 0;												//初始化错误预测数量
+		double total_loss = 0.0;										//初始化总损失
+		int correct = 0;														//初始化正确预测数量
+		int wrong = 0;														//初始化错误预测数量
+		auto startTime = chrono::steady_clock::now();	//记录开始时间
 
 		//遍历每个样本
 		for (int i = 0; i < num_samples; ++i) {
@@ -185,7 +192,7 @@ void CNN::train(const vector<MatrixXd>& featureMatrices, const vector<VectorXd>&
 
 		//输出平均损失
 		double avg_loss = total_loss / num_samples;
-		cout << fixed << setprecision(8) << "Epoch " << CYAN << "[" << setw(static_cast<int>(log10(epochs))) << std::right << epoch + 1 << "/" << epochs << "]     " << WHITE;
+		cout << fixed << setprecision(8) << "Epoch " << CYAN << "[" << setw(static_cast<int>(ceil(log10(epochs +1)))) << std::right << epoch + 1 << "/" << epochs << "]     " << WHITE;
 		cout << "Average Loss: " << YELLOW << setw(15) << std::left << avg_loss << WHITE;
 		cout << "Predict accuracy: ";
 		if (100.0 * correct / (correct + wrong) < 90) {
@@ -194,9 +201,14 @@ void CNN::train(const vector<MatrixXd>& featureMatrices, const vector<VectorXd>&
 		else{
 			cout << GREEN;
 		}
-		cout << setprecision(2) << 100.0 * correct / (correct + wrong) << "%" << endl << WHITE << defaultfloat;
+		cout << setprecision(2) << 100.0 * correct / (correct + wrong) << "%"  << WHITE << defaultfloat;
+		long long elapsed = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - startTime).count();	//计算耗时
+		train_time.push_back(elapsed);			//记录训练时间
+		cout << "  Time: " << BLUE << elapsed << "ms" << WHITE << endl;
 		csvFile << epoch + 1 << "," << 100.0 * correct / (correct + wrong) << "," << avg_loss << endl;			//保存训练精度到CSV文件
 	}
+	cout << GREEN << "Training completed!" << WHITE << endl;
+	cout << "Average Train Time: " << BLUE << std::accumulate(train_time.begin(), train_time.end(), 0) / train_time.size() << "ms"  << WHITE <<  endl;
 	csvFile.close();			//关闭CSV文件
 }
 

@@ -7,6 +7,8 @@
 #include <iostream>							//输入输出流库
 #include <fstream>							//文件流库
 #include <filesystem>						//文件系统库
+#include <chrono>								//时间库
+#include <numeric>							//数值计算库
 
 #define RED				"\033[31m"
 #define GREEN		"\033[32m"
